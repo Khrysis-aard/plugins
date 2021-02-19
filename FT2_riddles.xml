@@ -371,6 +371,10 @@ say I wish...I wish...</send>
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
+
+function OnPluginInstall ()
+  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+end
 ]]>
 </script> 
 
