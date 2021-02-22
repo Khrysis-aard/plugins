@@ -1026,8 +1026,6 @@ close hole</send>
 <script>
 <![CDATA[
 
-require "gmcphelper"
-
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
@@ -1035,6 +1033,8 @@ end
 function OnPluginInstall ()
   ColourNote ("blue","yellow","FT2 Plugin Installed! Type ft2 help - to show help")
 end
+
+require "gmcphelper"
 
 function OnPluginBroadcast(msg, id, name, text)
     if (id == "3e7dedbe37e44942dd46d264") then -- Check if this broadcast is by gmcp handler
