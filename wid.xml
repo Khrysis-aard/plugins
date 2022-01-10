@@ -19,10 +19,16 @@
    >
 <description trim="y">
 <![CDATA[
+=========================================================================================================
 type wid help to show this help file
+
 type won for alias to equip weapons
+
 type woff for alias to remove weapons
-type id (name of weapon) worn -while wearing the weapons to get the id numbers of newly equipped weapons
+
+type id (name of weapon) worn - while wearing the weapons to get the id numbers of newly equipped weapons
+	This is for primaryweapon and secondweapon variables (makes won and woff work correctly)
+=========================================================================================================
 ]]>
 </description>
 
@@ -44,6 +50,108 @@ type id (name of weapon) worn -while wearing the weapons to get the id numbers o
   <trigger
    enabled="y"
    expand_variables="y"
+   match="| Id         : *                                         |"
+   send_to="12"
+   sequence="100"
+  >
+  <send>SetVariable ("weaponid", "%1")</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   expand_variables="y"
+   match="| Worn       : Wielded                                            |"
+   omit_from_output="y"
+   send_to="10"
+   sequence="100"
+  >
+  <send>primaryweapon @weaponid</send>
+  </trigger>
+</triggers>
+
+<!--  Aliases  -->
+
+<aliases>
+  <alias
+   script="OnHelp"
+   match="wid help"
+   enabled="y"
+  >
+  </alias>
+</aliases>
+
+<aliases>
+  <alias
+   match="woff"
+   enabled="y"
+   expand_variables="y"
+   sequence="100"
+  >
+  <send>remove wielded
+remove second</send>
+  </alias>
+  <alias
+   match="won"
+   enabled="y"
+   expand_variables="y"
+   sequence="100"
+  >
+  <send>wear @primaryweapon
+dual @secondweapon</send>
+  </alias>
+  <alias
+   match="secondweapon *"
+   enabled="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>SetVariable ("secondweapon", "'%1'")
+Note ("Secondweapon is now: %1")</send>
+  </alias>
+  <alias
+   match="primaryweapon *"
+   enabled="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>SetVariable ("primaryweapon", "'%1'")
+Note ("Primaryweapon is now: %1")</send>
+  </alias>
+</aliases>
+
+<!--  Variables  -->
+
+<variables>
+  <variable name="primaryweapon">'2417400394'</variable>
+  <variable name="weaponid">2417400503</variable>
+  <variable name="secondweapon">'2417400503'</variable>
+</variables>
+
+<!--  Plugin help  -->
+
+<aliases>
+  <alias
+   script="OnHelp"
+   match="wid help"
+   enabled="y"
+  >
+  </alias>
+</aliases>
+
+<script>
+<![CDATA[
+function OnHelp ()
+  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+end
+
+function OnPluginInstall ()
+  ColourNote ("blue","yellow","wid Plugin Installed! Type wid help - to show help")
+end
+
+]]>
+</script> 
+
+</muclient>
+
    match="| Id         : *                                         |"
    send_to="12"
    sequence="100"
