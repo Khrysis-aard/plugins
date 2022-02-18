@@ -106,7 +106,7 @@ function sendAutolootIfNeeded()
             Note("Entering Vlad.  Turning off Autoloot.")
             calledFromPlugin = true
             autoReset = true
-            Send("autoloot")
+            Send("autoloot off")
         end
     else
         -- If they turn off autoloot and go to vlad, don't turn it back once we leave.
@@ -115,7 +115,7 @@ function sendAutolootIfNeeded()
 
             calledFromPlugin = true
             autoReset = false
-            Send("autoloot")
+            Send("autoloot on")
         end
     end
 end
@@ -147,7 +147,7 @@ end
 <aliases>
   <alias
    script="OnHelp"
-   match="autoloot:help"
+   match="autoloot help"
    enabled="y"
   >
   </alias>
