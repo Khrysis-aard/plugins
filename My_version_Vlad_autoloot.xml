@@ -161,7 +161,7 @@ end
 
 function OnPluginInstall ()
   ColourNote ("blue","yellow","Vlad autoloot Plugin Installed! Type autoloot help to show help")
-  Execute ("autoloot")
+
 end
 
 ]]>
