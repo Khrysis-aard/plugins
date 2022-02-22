@@ -949,11 +949,13 @@ close stew</send>
 EnableTriggerGroup("ft2", true)
 EnableAliasGroup("ft2", true)
 ColourNote ("blue","red", "FT2 is enabled!")
+enabled=1
 
 elseif ("%1") == ("off") then
 EnableTriggerGroup("ft2", false)
 EnableAliasGroup("ft2", false)
 ColourNote ("blue","red", "FT2 is disabled!")
+enabled=0
 end</send>
   </alias>
   <alias
@@ -1031,13 +1033,19 @@ function OnHelp ()
 end
 
 function OnPluginInstall ()
-  ColourNote ("blue","yellow","FT2 Plugin Installed! Type ft2 help - to show help")
+  ColourNote ("blue","yellow","FT2 Plugin Installed! Type ft2 help - to show help  Plugin is Disabled by default.")
+  EnableTriggerGroup("ft2",false)
+  EnableAliasGroup("ft2",false)
+  enabled=0
 end
 
 require "gmcphelper"
 
 function OnPluginBroadcast(msg, id, name, text)
-    if (id == "3e7dedbe37e44942dd46d264") then -- Check if this broadcast is by gmcp handler
+    if (enabled ~= nil and enabled == 0) then
+return
+end
+      if (id == "3e7dedbe37e44942dd46d264") then -- Check if this broadcast is by gmcp handler
         if (text == "room.info") then -- Get MyID and send note when in specific room
          MyID = tonumber(gmcp("room.info.num"))
   if MyID == 26762 then
