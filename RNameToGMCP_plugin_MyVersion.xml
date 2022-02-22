@@ -88,7 +88,9 @@ end
 end	
 
 function OnPluginInstall ()
-  ColourNote ("blue","yellow","RNameToGMCP Plugin Installed! Type roomid on/off to toggle on and off")
+  ColourNote ("blue","yellow","RNameToGMCP Plugin Installed! Type roomid on/off to toggle on and off. Plugin disabled by default.")
+  EnableTriggerGroup("roomid",false)
+  enabled=0
 end
 
 ]]>
@@ -96,7 +98,4 @@ end
 
 
 </muclient>
-	
-fix to make it better and easier by crowley
 
-Crowley tells you 'Honestly, I'd change the code to this: Make the alias just 'roomid', and change: group="roomid" to name="roomid" Then do: EnableTrigger("roomid", not GetTriggerInfo("roomid", 8)) -- Then if you want to display whether it's on or off, just do: ColourNote("blue", "red", "Roomids are now " .. GetTriggerInfo("roomid", 8) and "enabled!" or "disabled!")'
