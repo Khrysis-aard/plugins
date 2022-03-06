@@ -27,19 +27,21 @@ cprac custom : Compares to practice list then practices matches from the custom 
 
 cprac tier : Compares to practice list then practices matches from the tlist of (skills/spells)
 
-cprac list : List custom list of (skills/spells) to be practiced when doing cprac custom. 
+cprac list : List custom list of (skills/spells) to be practiced when doing cprac custom
                 (Make sure skill/spell name is exactly as on the practice list)
                       <---Ex: Bless needs to be Bless not bless etc.--->
                  This list can be whatever your want but the following are some ideas
                       <--- Ex: everything from the spells/skills spellup all commands --->
 
-cprac tlist :  List custom list of (skills/spells) to be practiced when doing cprac tier. 
+cprac tlist : List custom list of (skills/spells) to be practiced when doing cprac tier
                  (Make sure skill/spell name is exactly as on the practice list)
                       <--- Ex: Bless needs to be Bless not bless etc. --->
                  This list is meant for putting everything u want to practice right after tier or tier redo at r1 and the follownig ideas:
                       <--- Ex: Any attack spells or skills you want to pratice at level 1 --->
                       <--- Any spellup skills/spells you would rather include here and not on the custom list --->
                       <--- Everything from the skills passive all and  skills/spells curative all commands --->
+
+cprac custom/tier clear: Clears the list custom or tier so that you may start over from new
 
 ]]>
 </description>
