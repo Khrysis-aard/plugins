@@ -25,8 +25,22 @@ dprac list : List All available skills to be practiced
 
 cprac custom : Compares to practice list then practices matches from the custom list of (skills/spells)
 
-cprac list : List Custom list of (skills/spells) to be practiced (Make sure skill/spell name is exactly as on the practice list)
+cprac tier : Compares to practice list then practices matches from the tlist of (skills/spells)
+
+cprac list : List custom list of (skills/spells) to be practiced when doing cprac custom. 
+                (Make sure skill/spell name is exactly as on the practice list)
                       <---Ex: Bless needs to be Bless not bless etc.--->
+                 This list can be whatever your want but the following are some ideas
+                      <--- Ex: everything from the spells/skills spellup all commands --->
+
+cprac tlist :  List custom list of (skills/spells) to be practiced when doing cprac tier. 
+                 (Make sure skill/spell name is exactly as on the practice list)
+                      <--- Ex: Bless needs to be Bless not bless etc. --->
+                 This list is meant for putting everything u want to practice right after tier or tier redo at r1 and the follownig ideas:
+                      <--- Ex: Any attack spells or skills you want to pratice at level 1 --->
+                      <--- Any spellup skills/spells you would rather include here and not on the custom list --->
+                      <--- Everything from the skills passive all and  skills/spells curative all commands --->
+
 ]]>
 </description>
 
@@ -50,6 +64,13 @@ cprac list : List Custom list of (skills/spells) to be practiced (Make sure skil
     >
   </alias>
   <alias
+    match="tier *"
+    script="tier_list"
+    name="tier_list"
+    enabled="y" sequence="100" ignore_case="y"
+    >
+  </alias>
+  <alias
     match="^dprac (?&lt;cmd&gt;.*)$"
     script="prac_start"
     name="prac_start"
@@ -69,6 +90,17 @@ cprac list : List Custom list of (skills/spells) to be practiced (Make sure skil
   <trigger
    enabled="n"
    match="^(?&lt;skill&gt;[^\d-]+)(\d|-).*$"
+   name="prac_skill"
+   script="prac_skill"
+   sequence="100"
+   regexp="y"
+   group="prac_group"
+   omit_from_output="n"
+  >
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^(?&lt;skill&gt;[^\d-]+)(\d|-).*$"
    name="cprac_skill"
    script="cprac_skill"
    sequence="100"
@@ -80,11 +112,11 @@ cprac list : List Custom list of (skills/spells) to be practiced (Make sure skil
   <trigger
    enabled="n"
    match="^(?&lt;skill&gt;[^\d-]+)(\d|-).*$"
-   name="prac_skill"
-   script="prac_skill"
+   name="tprac_skill"
+   script="tprac_skill"
    sequence="100"
    regexp="y"
-   group="prac_group"
+   group="tprac_group"
    omit_from_output="n"
   >
   </trigger>
@@ -110,6 +142,17 @@ cprac list : List Custom list of (skills/spells) to be practiced (Make sure skil
    omit_from_output="n"
   >
   </trigger>
+<trigger
+   enabled="n"
+   match="^See 'help learned' for better ways to list skill/spell proficiency.$"
+   name="tprac_end"
+   script="tprac_end"
+   sequence="100"
+   regexp="y"
+   group="tprac_group"
+   omit_from_output="n"
+  >
+  </trigger>
 </triggers>
 
 <script>
@@ -123,6 +166,8 @@ cskills_count = 0
 cskills_found = {}
 match_count = 0
 do_practice = 0
+tskills_count = 0
+tskills_found = {}
 
 ----dprac stuff----
 
@@ -192,22 +237,44 @@ end
 
 function cprac_start (name, line, wildcards)
   local cmd = wildcards.cmd
-  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" then
-    Note("Invalid cprac command - try: cprac <custom|list|help>")
+  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" then
+    Note("Invalid cprac command - try: cprac <custom|tier|list|tlist|help>")
     return
-  end
+  end -- if
   if cmd == "help" then
     OnHelp ()
     return
-  end
+  end -- if
+  if cmd == "clear custom" then
+    cskills_found = {}
+    cskills_count = 0
+    Note("<--- custom list is clear --->")
+  end -- if
+  if cmd == "clear tier" then
+    tskills_found = {}
+    tskills_count = 0
+    Note("<--- tier list is clear --->")
+  end -- if
   if cmd == "list" then
   do_practice = 0
   cprac_custom ()
-  end
+  end -- if
+  if cmd == "tlist" then
+  do_practice = 4
+  cprac_custom ()
+  end -- if
   if cmd == "custom" then
     match_count = 0
     do_practice = 3
   EnableTriggerGroup("cprac_group", true)
+  skills_count = 0;
+  skills_found = {}
+  Send ("prac")
+  end -- if
+  if cmd == "tier" then
+    tskills_count = 0
+    do_practice = 5
+  EnableTriggerGroup("tprac_group", true)
   skills_count = 0;
   skills_found = {}
   Send ("prac")
@@ -228,11 +295,29 @@ function custom_list (name, line, wildcards)
   for k,v in pairs(cskills_found) do
      print(k)
  end -- for
+     Note ("Found " .. cskills_count .. " skill/s or spell/s")
 end -- custom_list
+
+function tier_list (name, line, wildcards)
+   local tskill = wildcards[1]
+  if not tskills_found[tskill] then
+     tskills_found[tskill] = 0
+     Note("Skill added: " .. tskill)
+     tskills_count = tskills_count + 1
+  else
+     tskills_found[tskill] = nil
+     Note("Skill removed: " .. tskill)
+     tskills_count = tskills_count - 1
+ end -- if
+  for k,v in pairs(tskills_found) do
+     print(k)
+ end -- for
+     Note("Found " .. tskills_count .. " skill/s or spell/s")
+end -- tier_list
 
 function cprac_custom ()
   if do_practice == 0 then
-    Note("There is/are " .. cskills_count .. " custom skill/s in this list")
+    Note("<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
     Note("To add or remove from this list type custom skill/spellname:")
     Note("Make sure to capitalize where needed to match the practice list")
     for k,v in pairs(cskills_found) do
@@ -243,8 +328,23 @@ end -- for
     for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
         Send("prac " .. v.skillname .. " full")
-       end -- for
-     end -- if
+       end -- if
+     end -- for
+   end -- if
+  if (do_practice == 4) then
+    Note("<---There is/are " .. tskills_count .. " skill/s or spell/s in this list--->")
+    Note("To add or remove from this list type tier skill/spellname:")
+    Note("Make sure to capitalize where needed to match the practice list")
+    for k,v in pairs(tskills_found) do
+    print(k)
+    end -- if
+   end -- for
+  if (do_practice == 5) then
+     for k,v in pairs(skills_found) do
+      if tskills_found[v.skillname] then
+        Send("prac " .. v.skillname .. " full")
+       end -- if
+     end -- for
    end -- if
  end -- cprac_custom
 
@@ -266,13 +366,40 @@ function cprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
        match_count = match_count +1
-    end -- for
-  end -- if
+    end -- if
+  end -- for
   Note("Loaded " .. match_count .. " Custom skill/s to practice")
   EnableTriggerGroup("cprac_group", false)
   -- tprint(cskills_found)
   cprac_custom ()
-end -- prac_end
+end -- cprac_end
+
+function tprac_skill (name, line, wildcards)
+  --  Wrath of god              166     1%
+  -- Note(wildcards.skill)
+  skill = trim(wildcards.skill)
+  -- Note(skill)
+  -- You have 62 training sessions available.
+  -- You have 162 practice sessions available.
+  if skill == "You have" then
+    return
+  end
+  table.insert(skills_found, {skillname=skill})
+  skills_count = skills_count + 1
+end -- tprac_skill
+
+function tprac_end (name, line, wildcards)
+      for k,v in pairs(skills_found) do
+      if tskills_found[v.skillname] then
+       tskills_count = tskills_count +1
+    end -- if
+  end -- for
+  Note("Loaded " .. tskills_count .. " tier skill/s to practice")
+  EnableTriggerGroup("tprac_group", false)
+  -- tprint(tskills_found)
+  cprac_custom ()
+end -- tprac_end
+
 
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
@@ -281,13 +408,18 @@ end
 function OnPluginInstall ()
   ColourNote ("blue","yellow","Practice all or custom list Installed! Type dprac/cprac help for help file")
   cskills_found = {}
+  tskills_found = {}
   assert (loadstring (GetVariable ("cskills_found") or "")) ()
   assert (loadstring (GetVariable ("cskills_count") or "")) ()
+  assert (loadstring (GetVariable ("tskills_found") or "")) ()
+  assert (loadstring (GetVariable ("tskills_count") or "")) ()
 end -- function OnPluginInstall
 
 function OnPluginSaveState ()
   SetVariable ("cskills_found", "cskills_found = " .. serialize.save_simple (cskills_found))
   SetVariable ("cskills_count", "cskills_count = " .. serialize.save_simple (cskills_count))
+  SetVariable ("tskills_found", "tskills_found = " .. serialize.save_simple (tskills_found))
+  SetVariable ("tskills_count", "tskills_count = " .. serialize.save_simple (tskills_count))
 end -- function OnPluginSaveState
 
 ]]>
