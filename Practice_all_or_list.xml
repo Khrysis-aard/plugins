@@ -274,7 +274,7 @@ function cprac_start (name, line, wildcards)
   Send ("prac")
   end -- if
   if cmd == "tier" then
-    tskills_count = 0
+    match_count = 0  
     do_practice = 5
   EnableTriggerGroup("tprac_group", true)
   skills_count = 0;
@@ -393,10 +393,10 @@ end -- tprac_skill
 function tprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
-       tskills_count = tskills_count +1
+       match_count = match_count +1
     end -- if
   end -- for
-  Note("Loaded " .. tskills_count .. " tier skill/s to practice")
+  Note("Loaded " .. match_count .. " tier skill/s to practice")
   EnableTriggerGroup("tprac_group", false)
   -- tprint(tskills_found)
   cprac_custom ()
