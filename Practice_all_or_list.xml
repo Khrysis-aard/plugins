@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.0"
+   version="1.1"
    >
 <description trim="y">
 <![CDATA[
@@ -478,7 +478,7 @@ function allprac_end (name, line, wildcards)
        match_count = match_count +1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. match_count .. " all skill/s to practice")
+  ColourNote("blue","yellow","Loaded " .. match_count .. " skill/s to practice")
   EnableTriggerGroup("allprac_group", false)
   -- tprint(matched_both_list_skills_found)
   cprac_custom ()
