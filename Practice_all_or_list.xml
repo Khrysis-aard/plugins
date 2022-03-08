@@ -32,6 +32,8 @@ cprac custom : Compares to practice list then practices matches from the custom 
 
 cprac tier : Compares to practice list then practices matches from the tlist of (skills/spells)
 
+cprac all : Compares both tier and custom to the practice list then practices matches from both
+
 cprac list : List custom list of (skills/spells) to be practiced when doing cprac custom
                 (Make sure skill/spell name is exactly as on the practice list)
                       <---Ex: Bless needs to be Bless not bless etc.--->
@@ -130,6 +132,17 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
   </trigger>
   <trigger
    enabled="n"
+   match="^(?&lt;skill&gt;[^\d-]+)(\d|-).*$"
+   name="allprac_skill"
+   script="allprac_skill"
+   sequence="100"
+   regexp="y"
+   group="allprac_group"
+   omit_from_output="n"
+  >
+  </trigger>
+  <trigger
+   enabled="n"
    match="^See 'help learned' for better ways to list skill/spell proficiency.$"
    name="prac_end"
    script="prac_end"
@@ -150,7 +163,7 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    omit_from_output="n"
   >
   </trigger>
-<trigger
+  <trigger
    enabled="n"
    match="^See 'help learned' for better ways to list skill/spell proficiency.$"
    name="tprac_end"
@@ -158,6 +171,17 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    sequence="100"
    regexp="y"
    group="tprac_group"
+   omit_from_output="n"
+  >
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^See 'help learned' for better ways to list skill/spell proficiency.$"
+   name="allprac_end"
+   script="allprac_end"
+   sequence="100"
+   regexp="y"
+   group="allprac_group"
    omit_from_output="n"
   >
   </trigger>
@@ -172,8 +196,7 @@ skills_count = 0
 skills_found = {}
 cskills_count = 0
 cskills_found = {}
-cmatch_count = 0
-tmatch_count = 0
+match_count = 0
 do_practice = 0
 tskills_count = 0
 tskills_found = {}
@@ -246,13 +269,21 @@ end
 
 function cprac_start (name, line, wildcards)
   local cmd = wildcards.cmd
-  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" then
+  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" and cmd ~= "all" then
     Note("Invalid cprac command - try: cprac <custom|tier|list|tlist|help>")
     return
   end -- if
   if cmd == "help" then
     OnHelp ()
     return
+  end -- if
+  if cmd == "all" then
+  match_count = 0
+  do_practice = 2
+  EnableTriggerGroup("allprac_group", true)
+  skills_count = 0;
+  skills_found = {}
+  Send ("prac")
   end -- if
   if cmd == "clear custom" then
     cskills_found = {}
@@ -273,7 +304,7 @@ function cprac_start (name, line, wildcards)
   cprac_custom ()
   end -- if
   if cmd == "custom" then
-    cmatch_count = 0
+    match_count = 0
     do_practice = 3
   EnableTriggerGroup("cprac_group", true)
   skills_count = 0;
@@ -281,7 +312,7 @@ function cprac_start (name, line, wildcards)
   Send ("prac")
   end -- if
   if cmd == "tier" then
-    tmatch_count = 0  
+    match_count = 0  
     do_practice = 5
   EnableTriggerGroup("tprac_group", true)
   skills_count = 0;
@@ -355,7 +386,18 @@ end -- for
        end -- if
      end -- for
    end -- if
- end -- cprac_custom
+  if (do_practice == 2) then
+     for k,v in pairs(skills_found) do
+      if cskills_found[v.skillname] then
+        Send("prac " .. v.skillname .. " full")
+      elseif tskills_found[v.skillname] then
+        Send("prac " .. v.skillname .. " full")
+      end -- if
+    end -- for
+  end -- if
+end -- cprac_custom
+
+---cprac custom stuff---
 
 function cprac_skill (name, line, wildcards)
   --  Wrath of god              166     1%
@@ -374,14 +416,16 @@ end -- cprac_skill
 function cprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
-       cmatch_count = cmatch_count +1
+       match_count = match_count +1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. cmatch_count .. " Custom skill/s to practice")
+  ColourNote("blue","yellow","Loaded " .. match_count .. " Custom skill/s to practice")
   EnableTriggerGroup("cprac_group", false)
   -- tprint(cskills_found)
   cprac_custom ()
 end -- cprac_end
+
+---cprac tier stuff---
 
 function tprac_skill (name, line, wildcards)
   --  Wrath of god              166     1%
@@ -400,14 +444,45 @@ end -- tprac_skill
 function tprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
-       tmatch_count = tmatch_count +1
+       match_count = match_count +1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. tmatch_count .. " tier skill/s to practice")
+  ColourNote("blue","yellow","Loaded " .. match_count .. " tier skill/s to practice")
   EnableTriggerGroup("tprac_group", false)
   -- tprint(tskills_found)
   cprac_custom ()
 end -- tprac_end
+
+---all prac stuff---
+
+function allprac_skill (name, line, wildcards)
+  --  Wrath of god              166     1%
+  -- Note(wildcards.skill)
+  skill = trim(wildcards.skill)
+  -- Note(skill)
+  -- You have 62 training sessions available.
+  -- You have 162 practice sessions available.
+  if skill == "You have" then
+    return
+  end
+  table.insert(skills_found, {skillname=skill})
+  skills_count = skills_count + 1
+end -- allprac_skill
+
+function allprac_end (name, line, wildcards)
+      for k,v in pairs(skills_found) do
+      if tskills_found[v.skillname] then
+       match_count = match_count +1
+    end -- if
+     if cskills_found[v.skillname] then
+       match_count = match_count +1
+    end -- if
+  end -- for
+  ColourNote("blue","yellow","Loaded " .. match_count .. " all skill/s to practice")
+  EnableTriggerGroup("allprac_group", false)
+  -- tprint(matched_both_list_skills_found)
+  cprac_custom ()
+end -- allprac_end
 
 
 function OnHelp ()
