@@ -66,6 +66,26 @@ type id (name of weapon) worn - while wearing the weapons to get the id numbers 
   >
   <send>primaryweapon @weaponid</send>
   </trigger>
+  <trigger
+   enabled="y"
+   match="You wield * in your off-hand."
+   send_to="12"
+   sequence="100"
+  >
+  <send>SetVariable ("offhand", "'%1'")
+ColourNote ("blue","yellow","%1 is your offhand")
+</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   match="You wield *."
+   send_to="12"
+   sequence="100"
+  >
+  <send>SetVariable ("mainhand", "'%1'")
+ColourNote ("blue","yellow","%1 is your mainhand")
+</send>
+  </trigger>
 </triggers>
 
 <!--  Aliases  -->
@@ -131,6 +151,8 @@ Note ("Primaryweapon is now: %1")</send>
 
 <script>
 <![CDATA[
+  
+
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
