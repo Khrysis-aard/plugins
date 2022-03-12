@@ -26,8 +26,7 @@ type won for alias to equip weapons
 
 type woff for alias to remove weapons
 
-type id (name of weapon) worn - while wearing the weapons to get the id numbers of newly equipped weapons
-	This is for primaryweapon and secondweapon variables (makes won and woff work correctly)
+type wid to show the current id numbers of equipped weapons
 =========================================================================================================
 ]]>
 </description>
@@ -40,53 +39,37 @@ type id (name of weapon) worn - while wearing the weapons to get the id numbers 
 <triggers>
   <trigger
    enabled="y"
-   expand_variables="y"
-   match="| Worn       : Dual wielded                                       |"
-   send_to="10"
-   sequence="100"
-  >
-  <send>secondweapon @weaponid</send>
-  </trigger>
-  <trigger
-   enabled="y"
-   expand_variables="y"
-   match="| Id         : *                                         |"
+   match="^You wield (.*?)\.$"
+   regexp="y"
    send_to="12"
    sequence="100"
   >
-  <send>SetVariable ("weaponid", "%1")</send>
+  <send>SendNoEcho ("eqdata")</send>
   </trigger>
   <trigger
    enabled="y"
-   expand_variables="y"
-   match="| Worn       : Wielded                                            |"
+   match="^(\d+)\,(.*)\,(.+)\,(\d+)\,(\d+)\,(\d+),(-?\d+),(-?\d+)$"
    omit_from_output="y"
-   send_to="10"
-   sequence="100"
-  >
-  <send>primaryweapon @weaponid</send>
-  </trigger>
-  <trigger
-   enabled="y"
-   match="You wield * in your off-hand."
+   regexp="y"
    send_to="12"
    sequence="100"
   >
-  <send>SetVariable ("offhand", "'%1'")
-ColourNote ("blue","yellow","%1 is your offhand")
-</send>
+  <send> if %7 == 25 then
+SetVariable("secondweapon","'%1'")
+ elseif %7 == 24 then
+SetVariable("primaryweapon","'%1'")
+  end</send>
   </trigger>
   <trigger
    enabled="y"
-   match="You wield *."
-   send_to="12"
+   match="^(\{\/eqdata\})$|^(\{eqdata\})$|^(\{eqdata \d*\})$"
+   omit_from_output="y"
+   regexp="y"
    sequence="100"
   >
-  <send>SetVariable ("mainhand", "'%1'")
-ColourNote ("blue","yellow","%1 is your mainhand")
-</send>
   </trigger>
 </triggers>
+
 
 <!--  Aliases  -->
 
@@ -97,9 +80,6 @@ ColourNote ("blue","yellow","%1 is your mainhand")
    enabled="y"
   >
   </alias>
-</aliases>
-
-<aliases>
   <alias
    match="woff"
    enabled="y"
@@ -119,33 +99,14 @@ remove second</send>
 dual @secondweapon</send>
   </alias>
   <alias
-   match="secondweapon *"
+   match="wid"
    enabled="y"
+   expand_variables="y"
    send_to="12"
    sequence="100"
   >
-  <send>SetVariable ("secondweapon", "'%1'")
-Note ("Secondweapon is now: %1")</send>
-  </alias>
-  <alias
-   match="primaryweapon *"
-   enabled="y"
-   send_to="12"
-   sequence="100"
-  >
-  <send>SetVariable ("primaryweapon", "'%1'")
-Note ("Primaryweapon is now: %1")</send>
-  </alias>
-</aliases>
-
-<!--  Plugin help  -->
-
-<aliases>
-  <alias
-   script="OnHelp"
-   match="wid help"
-   enabled="y"
-  >
+  <send>Note ("Primary weapon : ", "@primaryweapon")
+Note ("Secondary weapon :", "@secondweapon")</send>
   </alias>
 </aliases>
 
