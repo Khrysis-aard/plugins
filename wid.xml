@@ -27,6 +27,9 @@ type won for alias to equip weapons
 type woff for alias to remove weapons
 
 type wid to show the current id numbers of equipped weapons
+
+If this is the first time installed you need to type eqdata to update the variables for current weapons
+(automatically done after first time)
 =========================================================================================================
 ]]>
 </description>
