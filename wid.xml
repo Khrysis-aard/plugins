@@ -20,13 +20,15 @@
 <description trim="y">
 <![CDATA[
 =========================================================================================================
-type wid help to show this help file
+type wid help : to show this help file
 
-type won for alias to equip weapons
+type won : for alias to equip weapons
 
-type woff for alias to remove weapons
+type woff : for alias to remove weapons
 
-type wid to show the current id numbers of equipped weapons
+type wid : to show the current id numbers of equipped weapons
+
+type wid off : to show eqdata again if you need to (upon equipping new weapons goes back to normal)
 
 If this is the first time installed you need to type eqdata to update the variables for current weapons
 (automatically done after first time)
@@ -47,7 +49,8 @@ If this is the first time installed you need to type eqdata to update the variab
    send_to="12"
    sequence="100"
   >
-  <send>SendNoEcho ("eqdata")</send>
+  <send>SendNoEcho ("eqdata")
+  EnableTriggerGroup("eqdata", true)</send>
   </trigger>
   <trigger
    enabled="y"
@@ -56,6 +59,7 @@ If this is the first time installed you need to type eqdata to update the variab
    regexp="y"
    send_to="12"
    sequence="100"
+   group="eqdata"
   >
   <send> if %7 == 25 then
 SetVariable("secondweapon","'%1'")
@@ -69,10 +73,11 @@ SetVariable("primaryweapon","'%1'")
    omit_from_output="y"
    regexp="y"
    sequence="100"
+   send_to="12"
+   group="eqdata"
   >
   </trigger>
 </triggers>
-
 
 <!--  Aliases  -->
 
@@ -109,13 +114,24 @@ dual @secondweapon</send>
    sequence="100"
   >
   <send>Note ("Primary weapon : ", "@primaryweapon")
-Note ("Secondary weapon :", "@secondweapon")</send>
+        Note ("Secondary weapon :", "@secondweapon")
+  </send>
+  </alias>
+  <alias
+   match="wid off"
+   enabled="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>EnableTriggerGroup("eqdata", false)
+        Note ("Eqdata command not being hidden and will resume normal when you wear new weapons")
+        Note ("This is meant to just be able show eqdata if you have the need to")
+  </send>
   </alias>
 </aliases>
 
 <script>
 <![CDATA[
-  
 
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
