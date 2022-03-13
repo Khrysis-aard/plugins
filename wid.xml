@@ -38,7 +38,6 @@ If this is the first time installed you need to type eqdata to update the variab
 
 </plugin>
 
-
 <!--  Triggers  -->
 
 <triggers>
@@ -63,7 +62,9 @@ If this is the first time installed you need to type eqdata to update the variab
   >
   <send> if %7 == 25 then
 SetVariable("secondweapon","'%1'")
+SetVariable("secondary","'%3'")
  elseif %7 == 24 then
+SetVariable("primary","'%3'")
 SetVariable("primaryweapon","'%1'")
   end</send>
   </trigger>
@@ -113,8 +114,8 @@ dual @secondweapon</send>
    send_to="12"
    sequence="100"
   >
-  <send>Note ("Primary weapon : ", "@primaryweapon")
-        Note ("Secondary weapon :", "@secondweapon")
+  <send>AnsiNote("Primary weapon ",(ColoursToANSI("@primary")),"   Id number is : ","@primaryweapon")
+        AnsiNote("Secondary weapon ",(ColoursToANSI("@secondary")),"   Id number is : ","@secondweapon")
   </send>
   </alias>
   <alias
@@ -132,6 +133,8 @@ dual @secondweapon</send>
 
 <script>
 <![CDATA[
+
+require "aardwolf_colors"
 
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
