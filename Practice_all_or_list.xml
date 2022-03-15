@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.1"
+   version="1.0"
    >
 <description trim="y">
 <![CDATA[
@@ -332,9 +332,6 @@ function custom_list (name, line, wildcards)
      ColourNote("blue","yellow","Skill removed: " .. customskill)
      cskills_count = cskills_count - 1
  end -- if
-  for k,v in pairs(cskills_found) do
-     print(k)
- end -- for
      ColourNote ("blue","yellow","Found " .. cskills_count .. " skill/s or spell/s")
 end -- custom_list
 
@@ -349,9 +346,6 @@ function tier_list (name, line, wildcards)
      ColourNote("blue","yellow","Skill removed: " .. tskill)
      tskills_count = tskills_count - 1
  end -- if
-  for k,v in pairs(tskills_found) do
-     print(k)
- end -- for
      ColourNote("blue","yellow","Found " .. tskills_count .. " skill/s or spell/s")
 end -- tier_list
 
