@@ -537,7 +537,7 @@ end -- save_val_to_add
 
 function end_function ()
   ColourNote ("blue","yellow","You need " .. prac_new_count .. " practices to complete the list.")
-  EnableTriggerGroup ("ending", false)
+  EnableTrigger ("ending", false)
 end -- end_function
 
 
