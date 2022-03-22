@@ -186,41 +186,44 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
   >
   </trigger>
   <trigger
-   enabled="y"
+   enabled="n"
    match="^It will cost you (.+) practices to increase (.+) to 95\%\.$"
    omit_from_output="y"
    script="save_val_to_add"
    sequence="100"
    regexp="y"
    send_to="12"
+   group="omits_n_total_prac"
   >
   <send>prac_number = %1
         prac_count = 0</send>
   </trigger>
   <trigger
-   enabled="y"
+   enabled="n"
    match="^You only have (.+) practice (session|sessions) available\.$"
    omit_from_output="y"
    sequence="100"
    regexp="y"
+   group="omits_n_total_prac"
   >
   </trigger>
   <trigger
-   enabled="y"
+   enabled="n"
    match="^You have no practice sessions available\.$"
    omit_from_output="y"
    sequence="100"
    regexp="y"
+   group="omits_n_total_prac"
   >
   </trigger>
   <trigger
    enabled="n"
    match="^You are already standing\.$"
-   name="ending"
    omit_from_output="y"
    script="end_function"
    sequence="100"
    regexp="y"
+   group="omits_n_total_prac"
   >
   </trigger>
 </triggers>
@@ -280,7 +283,7 @@ function prac_skill (name, line, wildcards)
 end -- prac_skill
 
 function prac_end (name, line, wildcards)
-  Note("Loaded " .. skills_count .. " skill/s to practice")
+  ColourNote("blue","yellow","Loaded " .. skills_count .. " skill/s to practice")
   EnableTriggerGroup("prac_group", false)
   -- tprint(skills_found)
   prac_all()
@@ -288,21 +291,22 @@ end -- prac_end
 
 function prac_all ()
   if skills_count < 1 then
-    Note("No skills to practice.")
+    ColourNote("blue","yellow","No skills to practice.")
     return
   end
   if do_practice == 0 then
-    Note("dprac all will practice the skill/s below:")
-  end
-  for i,v in ipairs(skills_found) do
+    ColourNote("blue","yellow","dprac all will practice the skill/s below:")
+   for i,v in ipairs(skills_found) do
+    Note(v.skillname)
+   end --if
+ end -- for
     if do_practice == 1 then
-      Send("prac " .. v.skillname .. " full")
-    else
-      Note(v.skillname)
-    end
-  end -- for
-   EnableTrigger ("ending", true)
+   for i,v in ipairs(skills_found) do
+      SendNoEcho("prac " .. v.skillname .. " full")
+   EnableTriggerGroup ("omits_n_total_prac", true)
+    end -- if
    SendNoEcho("wake")
+  end -- for
 end -- prac_all
 
 function trim(s)
@@ -334,12 +338,12 @@ function cprac_start (name, line, wildcards)
   if cmd == "clear custom" then
     cskills_found = {}
     cskills_count = 0
-    Note("<--- custom list is clear --->")
+    ColourNote("blue","yellow","<--- custom list is clear --->")
   end -- if
   if cmd == "clear tier" then
     tskills_found = {}
     tskills_count = 0
-    Note("<--- tier list is clear --->")
+    ColourNote("blue","yellow","<--- tier list is clear --->")
   end -- if
   if cmd == "list" then
   do_practice = 0
@@ -375,11 +379,11 @@ function custom_list (name, line, wildcards)
    local customskill = wildcards[1]
   if not cskills_found[customskill] then
      cskills_found[customskill] = 0
-     ColourNote("blue","yellow","Skill added: " .. customskill)
+     ColourNote("blue","yellow","Custom list skill added: " .. customskill)
      cskills_count = cskills_count + 1
   else
      cskills_found[customskill] = nil
-     ColourNote("blue","yellow","Skill removed: " .. customskill)
+     ColourNote("blue","yellow","Custom list skill removed: " .. customskill)
      cskills_count = cskills_count - 1
  end -- if
      ColourNote ("blue","yellow","Found " .. cskills_count .. " skill/s or spell/s")
@@ -389,11 +393,11 @@ function tier_list (name, line, wildcards)
    local tskill = wildcards[1]
   if not tskills_found[tskill] then
      tskills_found[tskill] = 0
-     ColourNote("blue","yellow","Skill added: " .. tskill)
+     ColourNote("blue","yellow","Tier list skill added: " .. tskill)
      tskills_count = tskills_count + 1
   else
      tskills_found[tskill] = nil
-     ColourNote("blue","yellow","Skill removed: " .. tskill)
+     ColourNote("blue","yellow","Tier list skill removed: " .. tskill)
      tskills_count = tskills_count - 1
  end -- if
      ColourNote("blue","yellow","Found " .. tskills_count .. " skill/s or spell/s")
@@ -401,34 +405,36 @@ end -- tier_list
 
 function cprac_custom ()
   if do_practice == 0 then
-    ColourNote("blue","yellow","<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
-    ColourNote("blue","yellow","To add or remove from this list type custom skill/spellname:")
-    ColourNote("blue","yellow","Make sure to capitalize where needed to match the practice list")
     for k,v in pairs(cskills_found) do
     print(k)
  end -- if
-end -- for
+    ColourNote("blue","yellow","<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
+    ColourNote("blue","yellow","To add or remove from this list type custom skill/spellname:")
+    ColourNote("blue","yellow","Make sure to capitalize where needed to match the practice list")
+  end -- for
    if (do_practice == 3) then
     for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
+   SendNoEcho("wake")
    end -- if
   if (do_practice == 4) then
+    for k,v in pairs(tskills_found) do
+    print(k)
+  end -- if
     ColourNote("blue","yellow","<---There is/are " .. tskills_count .. " skill/s or spell/s in this list--->")
     ColourNote("blue","yellow","To add or remove from this list type tier skill/spellname:")
     ColourNote("blue","yellow","Make sure to capitalize where needed to match the practice list")
-    for k,v in pairs(tskills_found) do
-    print(k)
-    end -- if
    end -- for
-  if (do_practice == 5) then
+    if (do_practice == 5) then
      for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
+   SendNoEcho("wake")
    end -- if
   if (do_practice == 2) then
      for k,v in pairs(skills_found) do
@@ -438,9 +444,8 @@ end -- for
         SendNoEcho("prac " .. v.skillname .. " full")
       end -- if
     end -- for
-  end -- if
-   EnableTrigger ("ending", true)
    SendNoEcho("wake")
+  end -- if
 end -- cprac_custom
 
 ---cprac custom stuff---
@@ -467,6 +472,7 @@ function cprac_end (name, line, wildcards)
   end -- for
   ColourNote("blue","yellow","Loaded " .. match_count .. " Custom skill/s to practice")
   EnableTriggerGroup("cprac_group", false)
+  EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(cskills_found)
   cprac_custom ()
 end -- cprac_end
@@ -495,6 +501,7 @@ function tprac_end (name, line, wildcards)
   end -- for
   ColourNote("blue","yellow","Loaded " .. match_count .. " tier skill/s to practice")
   EnableTriggerGroup("tprac_group", false)
+  EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(tskills_found)
   cprac_custom ()
 end -- tprac_end
@@ -526,6 +533,7 @@ function allprac_end (name, line, wildcards)
   end -- for
   ColourNote("blue","yellow","Loaded " .. match_count .. " skill/s to practice")
   EnableTriggerGroup("allprac_group", false)
+  EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(matched_both_list_skills_found)
   cprac_custom ()
 end -- allprac_end
@@ -537,9 +545,8 @@ end -- save_val_to_add
 
 function end_function ()
   ColourNote ("blue","yellow","You need " .. prac_new_count .. " practices to complete the list.")
-  EnableTrigger ("ending", false)
+  EnableTriggerGroup ("omits_n_total_prac", false)
 end -- end_function
-
 
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
