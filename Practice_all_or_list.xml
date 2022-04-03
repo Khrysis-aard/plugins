@@ -149,7 +149,7 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    sequence="100"
    regexp="y"
    group="prac_group"
-   omit_from_output="n"
+   omit_from_output="y"
   >
   </trigger>
   <trigger
@@ -160,7 +160,7 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    sequence="100"
    regexp="y"
    group="cprac_group"
-   omit_from_output="n"
+   omit_from_output="y"
   >
   </trigger>
   <trigger
@@ -171,7 +171,7 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    sequence="100"
    regexp="y"
    group="tprac_group"
-   omit_from_output="n"
+   omit_from_output="y"
   >
   </trigger>
   <trigger
@@ -182,7 +182,7 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    sequence="100"
    regexp="y"
    group="allprac_group"
-   omit_from_output="n"
+   omit_from_output="y"
   >
   </trigger>
   <trigger
