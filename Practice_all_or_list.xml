@@ -28,28 +28,27 @@ dprac all : Practices All available skills
 
 dprac list : List All available skills to be practiced
 
-cprac custom : Compares to practice list then practices matches from the custom list of (skills/spells)
+cprac custom : Compares to practice list then practices matches from "cprac list" of (skills/spells) and spellup if enabled
+               This list is meant for whatever you want really heals, pets, attack spells etc..
 
-cprac tier : Compares to practice list then practices matches from the tlist of (skills/spells)
+cprac tier : Compares to practice list then practices matches from "cprac tlist" of (skills/spells) and spellup if enabled
+             This list is meant for what you want to practice when you hit a new tier and are R1
 
-cprac all : Compares both tier and custom to the practice list then practices matches from both
+cprac all : Compares both tier and custom to the practice list then practices matches from both and spellup if enabled
 
-cprac list : List custom list of (skills/spells) to be practiced when doing cprac custom
-                (Make sure skill/spell name is exactly as on the practice list)
-                      <---Ex: Bless needs to be Bless not bless etc.--->
-                 This list can be whatever your want but the following are some ideas
-                      <--- Ex: everything from the spells/skills spellup all commands --->
+cprac list/tlist/slist : List custom/tier/spellup lists with total on list
+                         (Just in case you want to see what is on it)
 
-cprac tlist : List custom list of (skills/spells) to be practiced when doing cprac tier
-                 (Make sure skill/spell name is exactly as on the practice list)
-                      <--- Ex: Bless needs to be Bless not bless etc. --->
-       This list is meant for putting everything u want to practice right after tier or tier redo at r1 and the follownig ideas:
-                      <--- Ex: Any attack spells or skills you want to pratice at level 1 --->
-                      <--- Any spellup skills/spells you would rather include here and not on the custom list --->
-                      <--- Everything from the skills passive all and  skills/spells curative all commands --->
-                      <--- Everything you want from spells/skills pets --->
+cprac clear custom/tier/spellup : Clears the list custom/tier/spellup so that you may start over from new
 
-cprac custom/tier clear: Clears the list custom or tier so that you may start over from new
+cprac spellup : toggles on/off add all : (skills/spells spellup all)(skills/spells curative all)(skills passive all and skills movement all)
+                When enabled it refreshes the list with what is currently available and works with cprac tier/custom/all
+
+To add/remove things from custom or tier : type custom skill/spellname or type tier skill/spellname
+                                             Ex: custom Bless adds Bless to the list and doing it again removes it
+                                             Ex: tier Bless adds Bless to the list and doing it again removes it
+                                          (Make sure skill/spell name is exactly as on the practice list when adding to list)
+                                                 <---Ex: Bless needs to be Bless not bless etc.--->
 
 ]]>
 </description>
@@ -187,6 +186,17 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
   </trigger>
   <trigger
    enabled="n"
+   match="^There is nobody here to help you practice\.$"
+   sequence="100"
+   send_to="12"
+   regexp="y"
+   group="omits_n_total_prac"
+   omit_from_output="y"
+  >
+  <send>noprac = 1</send>
+  </trigger>
+  <trigger
+   enabled="n"
    match="^It will cost you (.+) practices to increase (.+) to 95\%\.$"
    omit_from_output="y"
    script="save_val_to_add"
@@ -226,6 +236,71 @@ cprac custom/tier clear: Clears the list custom or tier so that you may start ov
    group="omits_n_total_prac"
   >
   </trigger>
+  <trigger
+   enabled="n"
+   match="^(Level [\d\s]+:)?\s+?(\w+[\s\w]+\w)\s+?(\d+)\s+?(\d+)%\s+?(\d+)$"
+   omit_from_output="y"
+   script="add_spellup"
+   regexp="y"
+   sequence="100"
+   send_to="12"
+   group="add_spells_skills"
+   >
+  <send>spl = ("%2")</send>
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^(Level [\d\s]+:)?\s+?(\w+[\s\w]+\w+)\s+(N\/A)\s+$"
+   omit_from_output="y"
+   script="add_spellup"
+   regexp="y"
+   sequence="100"
+   send_to="12"
+   group="add_spells_skills"
+   >
+  <send>spl = ("%2")</send>
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^(Level [\d\s]+:)?\s+?(\w+[\s\w]+\w)\s+?(\d+)%$"
+   omit_from_output="y"
+   script="add_spellup"
+   regexp="y"
+   sequence="100"
+   send_to="12"
+   group="add_spells_skills"
+   >
+  <send>spl = ("%2")</send>
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^(Level [\d\s]+:)?\s+?(\w+[\s\w]+\w)\s+(N\/A)\s+$"
+   omit_from_output="y"
+   script="add_spellup"
+   regexp="y"
+   sequence="100"
+   send_to="12"
+   group="add_spells_skills"
+   >
+  <send>spl = ("%2")</send>
+  </trigger>
+  <trigger
+   enabled="n"
+   match="^.*$"
+   regexp="y"
+   sequence="110"
+   omit_from_output="y"
+   group="add_spells_skills"
+  >
+  </trigger>
+  <trigger
+   enabled="n"
+   match="Adding...Spells and Skills..."
+   script="spellup_end"
+   sequence="100"
+   group="add_spells_skills"
+   >
+  </trigger>
 </triggers>
 
 <script>
@@ -243,6 +318,10 @@ tskills_count = 0
 tskills_found = {}
 prac_count = 0
 prac_new_count = 0
+spellup = {}
+spell_count = 0
+togspell = 0
+noprac = 0
 
 ----dprac stuff----
 
@@ -261,11 +340,12 @@ function prac_start (name, line, wildcards)
     do_practice = 1
     prac_new_count = 0
     prac_count = 0
+    noprac = 0
   end
   EnableTriggerGroup("prac_group", true)
   skills_count = 0;
   skills_found = {}
-  Send("prac")
+  SendNoEcho("prac")
 end -- prac_start
 
 function prac_skill (name, line, wildcards)
@@ -283,7 +363,7 @@ function prac_skill (name, line, wildcards)
 end -- prac_skill
 
 function prac_end (name, line, wildcards)
-  ColourNote("blue","yellow","Loaded " .. skills_count .. " skill/s to practice")
+  ColourNote("yellow","","Loaded " .. skills_count .. " skill/s to practice")
   EnableTriggerGroup("prac_group", false)
   -- tprint(skills_found)
   prac_all()
@@ -291,11 +371,10 @@ end -- prac_end
 
 function prac_all ()
   if skills_count < 1 then
-    ColourNote("blue","yellow","No skills to practice.")
     return
   end
   if do_practice == 0 then
-    ColourNote("blue","yellow","dprac all will practice the skill/s below:")
+    ColourNote("yellow","","dprac all will practice the skill/s below:")
    for i,v in ipairs(skills_found) do
     Note(v.skillname)
    end --if
@@ -317,33 +396,58 @@ end
 
 function cprac_start (name, line, wildcards)
   local cmd = wildcards.cmd
-  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" and cmd ~= "all" then
-    Note("Invalid cprac command - try: cprac <custom|tier|list|tlist|help>")
+  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" and cmd ~= "all" and cmd ~= "spellup" and cmd ~= "clear spellup" and cmd ~= "slist" then
+    Note("Invalid cprac command - try: cprac <custom|tier|spellup|list|tlist|slist|help>")
     return
   end -- if
   if cmd == "help" then
     OnHelp ()
     return
   end -- if
+  if cmd == "spellup" then
+  if togspell == 0 then
+     togspell = 1
+    ColourNote ("red","","Spellup Curative Movement Passive spells/skills enabled")
+    EnableTriggerGroup ("add_spells_skills", true)
+    SendNoEcho ("spells spellup all")
+    SendNoEcho ("skills spellup all")
+    SendNoEcho ("spells curative all")
+    SendNoEcho ("skills curative all")
+    SendNoEcho ("skills movement all")
+    SendNoEcho ("skills passive all")
+    SendNoEcho ("echo @cAdding@C...@cSpells and Skills@C...")
+  else togspell = 0
+    ColourNote ("red","","Spellup Curative Movement Passive spells/skills disabled")
+   end -- if
+ end -- if spellup
+  if cmd == "slist" then
+    spellup_list ()
+ end -- if spellup_list
+  if cmd == "clear spellup" then
+   spellup = {}
+   spell_count = 0
+    ColourNote("yellow","","<--- spellup list is clear --->")
+ end -- if clear spellup
   if cmd == "all" then
-  prac_count = 0
-  prac_new_count = 0
-  match_count = 0
-  do_practice = 2
-  EnableTriggerGroup("allprac_group", true)
-  skills_count = 0;
-  skills_found = {}
-  Send ("prac")
+   prac_count = 0
+   prac_new_count = 0
+   match_count = 0
+   do_practice = 2
+   noprac = 0
+   EnableTriggerGroup("allprac_group", true)
+   skills_count = 0;
+   skills_found = {}
+    SendNoEcho ("prac")
   end -- if
   if cmd == "clear custom" then
     cskills_found = {}
     cskills_count = 0
-    ColourNote("blue","yellow","<--- custom list is clear --->")
+    ColourNote("yellow","","<--- custom list is clear --->")
   end -- if
   if cmd == "clear tier" then
     tskills_found = {}
     tskills_count = 0
-    ColourNote("blue","yellow","<--- tier list is clear --->")
+    ColourNote("yellow","","<--- tier list is clear --->")
   end -- if
   if cmd == "list" then
   do_practice = 0
@@ -358,20 +462,22 @@ function cprac_start (name, line, wildcards)
     prac_new_count = 0
     match_count = 0
     do_practice = 3
+    noprac = 0
   EnableTriggerGroup("cprac_group", true)
   skills_count = 0;
   skills_found = {}
-  Send ("prac")
+  SendNoEcho ("prac")
   end -- if
   if cmd == "tier" then
     prac_count = 0
     prac_new_count = 0
     match_count = 0  
     do_practice = 5
+    noprac = 0
   EnableTriggerGroup("tprac_group", true)
   skills_count = 0;
   skills_found = {}
-  Send ("prac")
+  SendNoEcho ("prac")
   end -- if
  end -- cprac_start
 
@@ -379,28 +485,28 @@ function custom_list (name, line, wildcards)
    local customskill = wildcards[1]
   if not cskills_found[customskill] then
      cskills_found[customskill] = 0
-     ColourNote("blue","yellow","Custom list skill added: " .. customskill)
+     ColourNote("red","","Custom list skill added: " .. customskill)
      cskills_count = cskills_count + 1
   else
      cskills_found[customskill] = nil
-     ColourNote("blue","yellow","Custom list skill removed: " .. customskill)
+     ColourNote("red","","Custom list skill removed: " .. customskill)
      cskills_count = cskills_count - 1
  end -- if
-     ColourNote ("blue","yellow","Found " .. cskills_count .. " skill/s or spell/s")
+     ColourNote ("yellow","","Found " .. cskills_count .. " skill/s or spell/s")
 end -- custom_list
 
 function tier_list (name, line, wildcards)
    local tskill = wildcards[1]
   if not tskills_found[tskill] then
      tskills_found[tskill] = 0
-     ColourNote("blue","yellow","Tier list skill added: " .. tskill)
+     ColourNote("red","","Tier list skill added: " .. tskill)
      tskills_count = tskills_count + 1
   else
      tskills_found[tskill] = nil
-     ColourNote("blue","yellow","Tier list skill removed: " .. tskill)
+     ColourNote("red","","Tier list skill removed: " .. tskill)
      tskills_count = tskills_count - 1
  end -- if
-     ColourNote("blue","yellow","Found " .. tskills_count .. " skill/s or spell/s")
+     ColourNote("yellow","","Found " .. tskills_count .. " skill/s or spell/s")
 end -- tier_list
 
 function cprac_custom ()
@@ -408,13 +514,15 @@ function cprac_custom ()
     for k,v in pairs(cskills_found) do
     print(k)
  end -- if
-    ColourNote("blue","yellow","<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
-    ColourNote("blue","yellow","To add or remove from this list type custom skill/spellname:")
-    ColourNote("blue","yellow","Make sure to capitalize where needed to match the practice list")
+    ColourNote("cyan","","<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
+    ColourNote("cyan","","To add or remove from this list type custom skill/spellname:")
+    ColourNote("cyan","","Make sure to capitalize where needed to match the practice list")
   end -- for
    if (do_practice == 3) then
     for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
+        SendNoEcho("prac " .. v.skillname .. " full")
+      elseif spellup[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
@@ -424,13 +532,15 @@ function cprac_custom ()
     for k,v in pairs(tskills_found) do
     print(k)
   end -- if
-    ColourNote("blue","yellow","<---There is/are " .. tskills_count .. " skill/s or spell/s in this list--->")
-    ColourNote("blue","yellow","To add or remove from this list type tier skill/spellname:")
-    ColourNote("blue","yellow","Make sure to capitalize where needed to match the practice list")
+    ColourNote("cyan","","<---There is/are " .. tskills_count .. " skill/s or spell/s in this list--->")
+    ColourNote("cyan","","To add or remove from this list type tier skill/spellname:")
+    ColourNote("cyan","","Make sure to capitalize where needed to match the practice list")
    end -- for
     if (do_practice == 5) then
      for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
+        SendNoEcho("prac " .. v.skillname .. " full")
+      elseif spellup[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
@@ -441,6 +551,8 @@ function cprac_custom ()
       if cskills_found[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
       elseif tskills_found[v.skillname] then
+        SendNoEcho("prac " .. v.skillname .. " full")
+      elseif spellup[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
       end -- if
     end -- for
@@ -467,11 +579,17 @@ end -- cprac_skill
 function cprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
-       match_count = match_count +1
+       match_count = match_count + 1
+    end -- if
+      if spellup[v.skillname] and togspell == 1 then
+       match_count = match_count + 1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. match_count .. " Custom skill/s to practice")
+  ColourNote("yellow","","Loaded " .. match_count .. " Custom skill/s to practice")
   EnableTriggerGroup("cprac_group", false)
+    if match_count < 1 then
+    return
+    end -- test for count
   EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(cskills_found)
   cprac_custom ()
@@ -496,11 +614,17 @@ end -- tprac_skill
 function tprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
-       match_count = match_count +1
+       match_count = match_count + 1
+     end -- if 
+      if spellup[v.skillname] and togspell == 1 then
+       match_count = match_count + 1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. match_count .. " tier skill/s to practice")
+  ColourNote("yellow","","Loaded " .. match_count .. " tier skill/s to practice")
   EnableTriggerGroup("tprac_group", false)
+    if match_count < 1 then
+    return
+    end -- test for count
   EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(tskills_found)
   cprac_custom ()
@@ -525,18 +649,47 @@ end -- allprac_skill
 function allprac_end (name, line, wildcards)
       for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
-       match_count = match_count +1
+       match_count = match_count + 1
     end -- if
      if cskills_found[v.skillname] then
-       match_count = match_count +1
+       match_count = match_count + 1
+    end -- if
+     if spellup[v.skillname] and togspell == 1 then
+       match_count = match_count + 1
     end -- if
   end -- for
-  ColourNote("blue","yellow","Loaded " .. match_count .. " skill/s to practice")
+  ColourNote("yellow","","Loaded " .. match_count .. " skill/s to practice")
   EnableTriggerGroup("allprac_group", false)
+    if match_count < 1 then
+    return
+    end -- test for count
   EnableTriggerGroup ("omits_n_total_prac", true)
   -- tprint(matched_both_list_skills_found)
   cprac_custom ()
 end -- allprac_end
+
+---- add spellup spells/skills to table to toggle on/off
+
+function add_spellup (name, wildcards)
+  if not spellup[spl] then
+    spellup[spl] = 0
+   spell_count = spell_count + 1
+ end -- if
+end -- add_spellup
+
+function spellup_list ()
+  for k,v in pairs(spellup) do
+ print (k)
+  end -- for
+ ColourNote ("cyan","","There are " .. spell_count .. " spells/skills in your list")
+ ColourNote ("cyan","","To clear this list type cprac clear spellup")
+ ColourNote ("cyan","","To refresh this list type cprac spellup to disable then again to enable and refresh")
+end -- spellup_list
+
+function spellup_end ()
+ ColourNote ("cyan","","" .. spell_count .. " Spells and Skills added")
+  EnableTriggerGroup ("add_spells_skills", false)
+end -- print_spellup
 
 function save_val_to_add ()
    prac_count = prac_number + prac_new_count
@@ -544,7 +697,11 @@ function save_val_to_add ()
 end -- save_val_to_add
 
 function end_function ()
-  ColourNote ("blue","yellow","You need " .. prac_new_count .. " practices to complete the list.")
+      if noprac > 0 then
+        EnableTriggerGroup ("omits_n_total_prac", false)
+       return
+     end -- if
+  ColourNote ("yellow","","You need " .. prac_new_count .. " practices to complete the list.")
   EnableTriggerGroup ("omits_n_total_prac", false)
 end -- end_function
 
@@ -556,6 +713,10 @@ function OnPluginInstall ()
   ColourNote ("blue","yellow","Practice all or custom list Installed! Type dprac/cprac help for help file")
   cskills_found = {}
   tskills_found = {}
+  spellup = {}
+  assert (loadstring (GetVariable ("spell_count") or "")) ()
+  assert (loadstring (GetVariable ("togspell") or "")) ()
+  assert (loadstring (GetVariable ("spellup") or "")) ()
   assert (loadstring (GetVariable ("cskills_found") or "")) ()
   assert (loadstring (GetVariable ("cskills_count") or "")) ()
   assert (loadstring (GetVariable ("tskills_found") or "")) ()
@@ -563,6 +724,9 @@ function OnPluginInstall ()
 end -- function OnPluginInstall
 
 function OnPluginSaveState ()
+  SetVariable ("spell_count", "spell_count = " .. serialize.save_simple (spell_count))
+  SetVariable ("togspell", "togspell = " .. serialize.save_simple (togspell))
+  SetVariable ("spellup", "spellup = " .. serialize.save_simple (spellup))
   SetVariable ("cskills_found", "cskills_found = " .. serialize.save_simple (cskills_found))
   SetVariable ("cskills_count", "cskills_count = " .. serialize.save_simple (cskills_count))
   SetVariable ("tskills_found", "tskills_found = " .. serialize.save_simple (tskills_found))
