@@ -20,9 +20,6 @@
 
 </plugin>
 
-
-<!--  Plugin help  -->
-
 <aliases>
   <alias
    script="OnHelp"
@@ -743,7 +740,7 @@ end -- OnHelp
 
 function OnPluginDisconnect ()
   update_spl = 0
-end -- OnPluginClose
+end -- OnPluginDisconnect
 
 function OnPluginInstall ()
   ColourNote ("blue","yellow","Practice all or custom list Installed! Type dprac/cprac help for help file")
