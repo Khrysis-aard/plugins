@@ -17,41 +17,6 @@
    requires="5.07"
    version="1.0"
    >
-<description trim="y">
-<![CDATA[
-This plugin works well if you have went thrugh and added what you can to the forgetskill command built in the game.
-Remember that's 100 slots for skills/spells you don't use that can be off the list completely.
-This plugin doesnt covert trains to practices to finish the list you will have to convert them yourself.
-
-
-dprac all : Practices All available skills
-
-dprac list : List All available skills to be practiced
-
-cprac custom : Compares to practice list then practices matches from "cprac list" of (skills/spells) and spellup if enabled
-               This list is meant for whatever you want really heals, pets, attack spells etc..
-
-cprac tier : Compares to practice list then practices matches from "cprac tlist" of (skills/spells) and spellup if enabled
-             This list is meant for what you want to practice when you hit a new tier and are R1
-
-cprac all : Compares both tier and custom to the practice list then practices matches from both and spellup if enabled
-
-cprac list/tlist/slist : List custom/tier/spellup lists with total on list
-                         (Just in case you want to see what is on it)
-
-cprac clear custom/tier/spellup : Clears the list custom/tier/spellup so that you may start over from new
-
-cprac spellup : toggles on/off add all : (skills/spells spellup all)(skills/spells curative all)(skills passive all and skills movement all)
-                When enabled it refreshes the list with what is currently available and works with cprac tier/custom/all
-
-To add/remove things from custom or tier : type custom skill/spellname or type tier skill/spellname
-                                             Ex: custom Bless adds Bless to the list and doing it again removes it
-                                             Ex: tier Bless adds Bless to the list and doing it again removes it
-                                          (Make sure skill/spell name is exactly as on the practice list when adding to list)
-                                                 <---Ex: Bless needs to be Bless not bless etc.--->
-
-]]>
-</description>
 
 </plugin>
 
@@ -228,11 +193,9 @@ To add/remove things from custom or tier : type custom skill/spellname or type t
   </trigger>
   <trigger
    enabled="n"
-   match="^You are already standing\.$"
-   omit_from_output="y"
+   match="...Finished Practicing..."
    script="end_function"
    sequence="100"
-   regexp="y"
    group="omits_n_total_prac"
   >
   </trigger>
@@ -301,6 +264,15 @@ To add/remove things from custom or tier : type custom skill/spellname or type t
    group="add_spells_skills"
    >
   </trigger>
+  <trigger
+   enabled="n"
+   match="...cprac spellup enabled/disabled?"
+   script="spellup_enabled_disabled"
+   sequence="100"
+   group="enabled_disabled"
+   omit_from_output="y"
+   >
+  </trigger>
 </triggers>
 
 <script>
@@ -322,6 +294,7 @@ spellup = {}
 spell_count = 0
 togspell = 0
 noprac = 0
+update_spl = 0
 
 ----dprac stuff----
 
@@ -384,7 +357,7 @@ function prac_all ()
       SendNoEcho("prac " .. v.skillname .. " full")
    EnableTriggerGroup ("omits_n_total_prac", true)
     end -- if
-   SendNoEcho("wake")
+   SendNoEcho("echo @C...@cFinished Practicing@C...")
   end -- for
 end -- prac_all
 
@@ -514,9 +487,8 @@ function cprac_custom ()
     for k,v in pairs(cskills_found) do
     print(k)
  end -- if
-    ColourNote("cyan","","<---There is/are " .. cskills_count .. " skill/s or spell/s in this list--->")
-    ColourNote("cyan","","To add or remove from this list type custom skill/spellname:")
-    ColourNote("cyan","","Make sure to capitalize where needed to match the practice list")
+    ColourNote("cyan","","" .. cskills_count .. " skill/s or spell/s in clist")
+    ColourNote("cyan","","To add/remove type custom skill/spellname")
   end -- for
    if (do_practice == 3) then
     for k,v in pairs(skills_found) do
@@ -526,15 +498,14 @@ function cprac_custom ()
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
-   SendNoEcho("wake")
+   SendNoEcho("echo @C...@cFinished Practicing@C...")
    end -- if
   if (do_practice == 4) then
     for k,v in pairs(tskills_found) do
     print(k)
   end -- if
-    ColourNote("cyan","","<---There is/are " .. tskills_count .. " skill/s or spell/s in this list--->")
-    ColourNote("cyan","","To add or remove from this list type tier skill/spellname:")
-    ColourNote("cyan","","Make sure to capitalize where needed to match the practice list")
+    ColourNote("cyan","","" .. tskills_count .. " skill/s or spell/s in tlist")
+    ColourNote("cyan","","To add/remove from type tier skill/spellname")
    end -- for
     if (do_practice == 5) then
      for k,v in pairs(skills_found) do
@@ -544,7 +515,7 @@ function cprac_custom ()
         SendNoEcho("prac " .. v.skillname .. " full")
        end -- if
      end -- for
-   SendNoEcho("wake")
+   SendNoEcho("echo @C...@cFinished Practicing@C...")
    end -- if
   if (do_practice == 2) then
      for k,v in pairs(skills_found) do
@@ -556,7 +527,7 @@ function cprac_custom ()
         SendNoEcho("prac " .. v.skillname .. " full")
       end -- if
     end -- for
-   SendNoEcho("wake")
+   SendNoEcho("echo @C...@cFinished Practicing@C...")
   end -- if
 end -- cprac_custom
 
@@ -681,9 +652,8 @@ function spellup_list ()
   for k,v in pairs(spellup) do
  print (k)
   end -- for
- ColourNote ("cyan","","There are " .. spell_count .. " spells/skills in your list")
- ColourNote ("cyan","","To clear this list type cprac clear spellup")
- ColourNote ("cyan","","To refresh this list type cprac spellup to disable then again to enable and refresh")
+ ColourNote ("cyan","","" .. spell_count .. " spells/skills found")
+ ColourNote ("cyan","","To refresh manually type cprac spellup to disable then again to enable and refresh")
 end -- spellup_list
 
 function spellup_end ()
@@ -705,9 +675,75 @@ function end_function ()
   EnableTriggerGroup ("omits_n_total_prac", false)
 end -- end_function
 
+function spellup_enabled_disabled ()
+            if update_spl == 1 and togspell == 1 then
+         ColourNote("red","","Spellup Curative Movement Passive spells/skills is already enabled")
+    end -- if
+            if update_spl == 1 and togspell == 0 then
+         ColourNote("red","","Spellup Curative Movement Passive spells/skills disabled")
+         ColourNote("red","","To enable type cprac spellup")
+    end -- if
+         EnableTriggerGroup ("enabled_disabled", false)
+ end -- spellup_enabled_disabled
+
+function OnPluginBroadcast (msg, id, name, text)
+      if (id == '3e7dedbe37e44942dd46d264') then
+            if (text == 'comm.tick') then
+            if update_spl == 0 then
+               EnableTriggerGroup ("add_spells_skills", true)
+               EnableTriggerGroup ("enabled_disabled", true)
+               SendNoEcho ("spells spellup all")
+               SendNoEcho ("skills spellup all")
+               SendNoEcho ("spells curative all")
+               SendNoEcho ("skills curative all")
+               SendNoEcho ("skills movement all")
+               SendNoEcho ("skills passive all")
+               SendNoEcho ("echo @R...cprac spellup enabled/disabled?")
+               SendNoEcho ("echo @cAdding@C...@cSpells and Skills@C...")
+                 update_spl = 1
+         end -- if
+      end -- if
+   end -- if
+end -- OnPluginBroadcast
+
 function OnHelp ()
-  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
-end
+  ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
+  ColourNote("blue","","|","green",""," Utilize the forgetskill command for samespells or other things you want to hide from the practice list. ","blue","","|")
+  ColourNote("blue","","|","green",""," You can add 100 spells/skills to the forgetskill list built into game.                                  ","blue","","|")
+  ColourNote("blue","","|","green",""," This plugin doesnt covert trains to practices to finish the list you will have to convert them yourself.","blue","","|")
+  ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
+  ColourNote("blue","","|","cyan",""," dprac all :","yellow",""," Practices All available skills                                                              ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," dprac list :","yellow",""," List All available skills to be practiced                                                  ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac custom :","yellow",""," Practices matches from cprac list of skills/spells and spellup if enabled                ","blue","","|")
+  ColourNote("blue","","|","yellow","","                This list is meant for whatever you want really heals, pets, attack spells etc..         ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac tier :","yellow",""," Practices matches from cprac tlist of skills/spells and spellup if enabled                 ","blue","","|")
+  ColourNote("blue","","|","yellow","","              This list is meant for what you want to practice when you hit a new tier and are R1        ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac all :","yellow",""," Practices matches from both cprac list/tlist and spellup if enabled                         ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac list/tlist/slist :","yellow",""," List custom/tier/spellup lists with total on list                              ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac clear custom/tier/spellup :","yellow",""," Clears the list custom/tier/spellup                                   ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," cprac spellup :","yellow",""," toggles on/off                                                                          ","blue","","|")
+  ColourNote("blue","","|","yellow","","                 Adds skills/spells spellup, curative, passive, movement all                             ","blue","","|")
+  ColourNote("blue","","|","yellow","","                 Refreshes with what is currently available when toggled/entering game/tier              ","blue","","|")
+  ColourNote("blue","","|","yellow","","                 Works with cprac tier/custom/all                                                        ","blue","","|")
+  ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
+  ColourNote("blue","","|","cyan",""," To add/remove list/tlist :","yellow",""," type custom skill/spellname or type tier skill/spellname                     ","blue","","|")
+  ColourNote("blue","","|","yellow","","                            Ex: custom Bless adds Bless to the list and doing it again removes it        ","blue","","|")
+  ColourNote("blue","","|","yellow","","                            Ex: tier Bless adds Bless to the list and doing it again removes it          ","blue","","|")
+  ColourNote("blue","","|","yellow","","                            Skill/Spell must match exactly as the practice list shows                    ","blue","","|")
+  ColourNote("blue","","|","yellow","","                            Ex: Bless needs to be Bless not bless etc.                                   ","blue","","|")
+  ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
+end -- OnHelp
+
+function OnPluginDisconnect ()
+  update_spl = 0
+end -- OnPluginClose
 
 function OnPluginInstall ()
   ColourNote ("blue","yellow","Practice all or custom list Installed! Type dprac/cprac help for help file")
