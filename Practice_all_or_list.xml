@@ -155,7 +155,9 @@
    group="omits_n_total_prac"
    omit_from_output="y"
   >
-  <send>noprac = 1</send>
+  <send>noprac = 1
+        SendNoEcho ("echo @C...@cCannot practice here@C...")
+  </send>
   </trigger>
   <trigger
    enabled="n"
@@ -269,6 +271,23 @@
    group="enabled_disabled"
    omit_from_output="y"
    >
+  </trigger>
+  <trigger
+   enabled="y"
+   expand_variables="y"
+   match="^INFO\: (.+) has been reborn as (a|an) (.+)\.$"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>require 'gmcphelper'
+
+  local name = gmcp("char.base.name")
+  local player = "%1"
+   if name == player then
+   Note("testing for update spell list")
+   update_spl = 0
+  end</send>
   </trigger>
 </triggers>
 
