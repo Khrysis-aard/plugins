@@ -11,7 +11,7 @@
    save_state="y"
    date_written="2022-04-18 11:26:19"
    requires="5.07"
-   version="1.1"
+   version="1.0"
    >
 <description trim="y">
 <![CDATA[
@@ -50,7 +50,7 @@ testing update function
 <![CDATA[
 
     function update_plugin()
-        raw = "https://github.com/Khrysis-aard/plugins/main/test.xml"
+        raw = "https://raw.githubusercontent.com/Khrysis-aard/plugins/main/test.xml"
         async_ok, async = pcall (require, "async")
         if async_ok then
             plugin_page = async.doAsyncRemoteRequest(raw, raw_get, "HTTPS")
@@ -59,7 +59,10 @@ testing update function
         end
     end
     function raw_get(retval, page, status, headers, full_status, request_url)
+        if status == 200 then 
             raw_version = tonumber(string.match(page, '%s+version="([0-9%.]+)">'))
+        end
+
         if raw_version == PLUGIN_VERSION then
             ColourNote("white", "blue", PLUGIN_NAME .. " is up-to-date.")
         elseif raw_version > PLUGIN_VERSION then
@@ -79,6 +82,8 @@ testing update function
     function OnPluginInstall()
         PLUGIN_VERSION  = GetPluginInfo(GetPluginID(), 19)
         PLUGIN_NAME   = GetPluginInfo(GetPluginID(), 1)
+        Note(PLUGIN_VERSION)
+        Note(PLUGIN_NAME)
     end
 
     function OnHelp ()
