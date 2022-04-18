@@ -59,7 +59,7 @@ testing update function
         end
     end
     function raw_get(retval, page, status, headers, full_status, request_url)
-            raw_version = tonumber(string.match(page, '%s+version="([0-9%.]+)">'))
+            raw_version = tonumber(string.match(page, '%s+version="([0-9%.]+)"'))
 
         if raw_version == PLUGIN_VERSION then
             ColourNote("white", "blue", PLUGIN_NAME .. " is up-to-date.")
