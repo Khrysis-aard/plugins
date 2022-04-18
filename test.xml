@@ -49,40 +49,43 @@ testing update function
 <script>
 <![CDATA[
 
-local https = require "ssl.https"
-Remote = {}
-function update_plugin(alias, line, wc)
-    local url = "https://github.com/Khrysis-aard/plugins/main/test.xml"
-    local xml = https.request(url)
-    if (not xml) then
-        Utility.msg_prim("Failed to download remote plugin file.")
-        return false
+    function update_plugin()
+        raw = "https://github.com/Khrysis-aard/plugins/main/test.xml"
+        async_ok, async = pcall (require, "async")
+        if async_ok then
+            plugin_page = async.doAsyncRemoteRequest(raw, raw_get, "HTTPS")
+        else
+            ColourNote("white", "blue", "Error on plugin update!")
+        end
     end
-    local pluginID = GetPluginID()
-    local localVersion = GetPluginInfo(pluginID, 19) or 0
-    local localVersionStr = string.format("%1.2f", localVersion)
-    local remoteVersionStr = xml:match('%s%s+version="([0-9%.]+)"')
-    local remoteVersion = tonumber(remoteVersionStr or "") or 0
-    if (localVersion == remoteVersion) then
-        Utility.msg_prim("Version is up to date.")
-        return true
-    end
-    Utility.msg_prim(string.format(
-        "Updating from v%s to v%s...",
-        localVersionStr, remoteVersionStr
-    ))
-    Utility.msg_sec("Please do not touch anything.")
-    local fileName = GetPluginInfo(pluginID, 6)
-    local file = assert(io.open(fileName, "w"))
-    file:write(xml)
-    file:close()
-    Utility.reload_plugin()
-    return true
-end
+    function raw_get(retval, page, status, headers, full_status, request_url)
+        if status == 200 then
+            raw_version = tonumber(string.match(page, '%s+version="([0-9%.]+)">'))
+        end
+        if raw_version == PLUGIN_VERSION then
+            ColourNote("white", "blue", PLUGIN_NAME .. " is up-to-date.")
+        elseif raw_version > PLUGIN_VERSION then
+            ColourNote("white", "blue", "Updating from version " .. PLUGIN_VERSION .. " to " .. raw_version .. ". Do not touch anything!")
+            local file = io.open(GetPluginInfo(GetPluginID(), 6), "w")
+            file:write(page)
+            file:close()
+            if "" == GetAlphaOption("script_prefix") then
+                SetAlphaOption("script_prefix", "\\\\\\")
+            end
+            Execute(GetAlphaOption("script_prefix") .. "DoAfterSpecial(1, \"ReloadPlugin('" .. GetPluginID() .. "')\", sendto.script)")
+            ColourNote("white", "blue", "Update complete!")
+        end
+        raw_version = nil
+    end -- end Update code
 
-function OnHelp ()
-  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
-end
+    function OnPluginInstall()
+        PLUGIN_VERSION  = GetPluginInfo(GetPluginID(), 19)
+        PLUGIN_NAME   = GetPluginInfo(GetPluginID(), 1)
+    end
+
+    function OnHelp ()
+        world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+    end
 ]]>
 </script> 
 
