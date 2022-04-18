@@ -51,7 +51,7 @@ testing update function
 
 local https = require "ssl.https"
 Remote = {}
-function Remote.update_plugin(alias, line, wc)
+function update_plugin(alias, line, wc)
     local url = "https://github.com/Khrysis-aard/plugins/main/test.xml"
     local xml = https.request(url)
     if (not xml) then
