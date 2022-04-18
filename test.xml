@@ -54,7 +54,7 @@ testing update function
 <![CDATA[
 
   function update_plugin()
-        raw = "https://raw.githubusercontent.com/AardCrowley/Aardwolf-Scripts/master/Aardwolf_Clock%20V2/Aardwolf_Clock.xml"
+        raw = "https://github.com/Khrysis-aard/plugins/main/test.xml"
         async_ok, async = pcall (require, "async")
         if async_ok then
             plugin_page = async.doAsyncRemoteRequest(raw, raw_get, "HTTPS")
