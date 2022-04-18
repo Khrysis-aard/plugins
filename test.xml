@@ -39,19 +39,6 @@ testing update function
   </alias>
 </aliases>
 
-<!--  Variables  -->
-
-<variables>
-  <variable name="manapot">'seekers100mana'</variable>
-  <variable name="aspell">'Flaming sphere'</variable>
-  <variable name="healpot">'seekers60heal'</variable>
-  <variable name="primaryweapon">'2420795218'</variable>
-  <variable name="secondweapon">'2621981407'</variable>
-  <variable name="groupleader">Zathrus</variable>
-  <variable name="aoe">'ice storm'</variable>
-  <variable name="gquestnumber">'2615'</variable>
-</variables>
-
 <!--  Plugin help  -->
 
 <aliases>
@@ -65,6 +52,36 @@ testing update function
 
 <script>
 <![CDATA[
+
+  function update_plugin()
+        raw = "https://raw.githubusercontent.com/AardCrowley/Aardwolf-Scripts/master/Aardwolf_Clock%20V2/Aardwolf_Clock.xml"
+        async_ok, async = pcall (require, "async")
+        if async_ok then
+            plugin_page = async.doAsyncRemoteRequest(raw, raw_get, "HTTPS")
+        else
+            ColourNote("white", "blue", "Error on plugin update!")
+        end
+    end
+    function raw_get(retval, page, status, headers, full_status, request_url)
+        if status == 200 then
+            raw_version = tonumber(string.match(page, '%s+version="([0-9%.]+)">'))
+        end
+        if raw_version == PLUGIN_VERSION then
+            ColourNote("white", "blue", PLUGIN_NAME .. " is up-to-date.")
+        elseif raw_version > PLUGIN_VERSION then
+            ColourNote("white", "blue", "Updating from version " .. PLUGIN_VERSION .. " to " .. raw_version .. ". Do not touch anything!")
+            local file = io.open(GetPluginInfo(GetPluginID(), 6), "w")
+            file:write(page)
+            file:close()
+            if "" == GetAlphaOption("script_prefix") then
+                SetAlphaOption("script_prefix", "\\\\\\")
+            end
+            Execute(GetAlphaOption("script_prefix") .. "DoAfterSpecial(1, \"ReloadPlugin('" .. GetPluginID() .. "')\", sendto.script)")
+            ColourNote("white", "blue", "Update complete!")
+        end
+        raw_version = nil
+    end -- end Update code
+
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
