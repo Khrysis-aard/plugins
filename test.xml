@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-04-18 11:26:19"
    requires="5.07"
-   version="1.01"
+   version="1.0"
    >
 <description trim="y">
 <![CDATA[
@@ -82,6 +82,10 @@ function Remote.update_plugin(alias, line, wc)
     file:close()
     Utility.reload_plugin()
     return true
+end
+
+function OnHelp ()
+  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
 ]]>
 </script> 
