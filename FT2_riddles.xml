@@ -353,6 +353,14 @@ say I wish...I wish...</send>
   >
   <send>say twelve brothers</send>
   </trigger>
+   <trigger
+   enabled="y"
+   group="ft2"
+   match="What is the magic bean related to?"
+   sequence="100"
+  >
+  <send>say the Mexican Jumping Bean</send>
+  </trigger>
 </triggers>
 
 <!--  Plugin help  -->
