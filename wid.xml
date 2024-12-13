@@ -30,6 +30,9 @@ type wid : to show the current id numbers of equipped weapons
 
 type wid off : to show eqdata again if you need to (upon equipping new weapons goes back to normal)
 
+Now only is going to grab the name and id's of weapons with keep flags on them to prevent overlapping it
+with junk weapons etc.
+
 If this is the first time installed you need to type eqdata to update the variables for current weapons
 (automatically done after first time)
 =========================================================================================================
@@ -52,7 +55,7 @@ If this is the first time installed you need to type eqdata to update the variab
   EnableTriggerGroup("eqdata", true)</send>
   </trigger>
   <trigger
-   enabled="y"
+   enabled="n"
    match="^(\d+)\,(.*)\,(.+)\,(\d+)\,(\d+)\,(\d+),(-?\d+),(-?\d+)$"
    omit_from_output="y"
    regexp="y"
@@ -60,16 +63,21 @@ If this is the first time installed you need to type eqdata to update the variab
    sequence="100"
    group="eqdata"
   >
-  <send> if %7 == 25 then
+  <send>
+  local captured_string = "%2"
+  if %7 == 25 and
+  string.find(captured_string,"K") then 
 SetVariable("secondweapon","'%1'")
 SetVariable("secondary","'%3'")
- elseif %7 == 24 then
+ end
+ if %7 == 24 and
+ string.find(captured_string,"K") then
 SetVariable("primary","'%3'")
 SetVariable("primaryweapon","'%1'")
   end</send>
   </trigger>
   <trigger
-   enabled="y"
+   enabled="n"
    match="^(\{\/eqdata\})$|^(\{eqdata\})$|^(\{eqdata \d*\})$"
    omit_from_output="y"
    regexp="y"
