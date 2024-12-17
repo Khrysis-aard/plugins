@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+<!-- Saved on Sunday, December 15, 2024, 11:14 PM -->
+<!-- MuClient version 5.07-pre -->
+
+<muclient>
+<plugin
+   name="CycleCastSpells"
+   author="Khrysis"
+   id="74b124cb16d29c3f9a369ae4"
+   language="Lua"
+   purpose="cycle atks in lists you create"
+   save_state="y"
+   date_written="2024-12-15 23:12:46"
+   requires="5.07"
+   version="1.0"
+   >
+   <description trim="y">
+<![CDATA[
+=========================================================================================================
+type cc help : to show this help file
+
+type cc add <spellname> <group> : to add spells to list with their group type ( ex: cc add fireball fire
+                                  or can be as simple as cc add fireball a) cc a or cc fire would work
+
+type cc rem <spellname> <group> : to remove spells from list by spellname and element type
+
+type cc list : to show the list of spells for the each element type
+
+type cc <group> : to cast spells of the given element in the order of the list, one at a time
+
+type ccx <group> <mobname> : to start fights or cast at specific mobs using the list used
+
+type cc clear <group> : to clear all spells for the given element (e.g., cc clear fire)
+
+type cc clear all : to clear all categories and spells
+=========================================================================================================
+]]>
+</description>
+
+</plugin>
+
+<aliases>
+  <alias
+   script="OnHelp"
+   match="^cc help$"
+   enabled="y" regexp="y" sequence="100" ignore_case="y"
+  >
+  </alias>
+  
+  <alias
+   match="^cc list$"
+   enabled="y" 
+   send_to="12"
+   regexp="y" 
+   sequence="100" 
+   ignore_case="y"
+  >
+  <send> 
+      -- Check if there are any elements in the spellsTable
+      if next(spellsTable) == nil then
+          Note("No spells have been added to any element yet.")
+      else
+          -- List all categories (element types) and their spells
+          for element, spells in pairs(spellsTable) do
+              if #spells > 0 then
+                  Note("Spells for " .. element .. ": " .. table.concat(spells, ", "))
+              else
+                  Note("No spells found for " .. element .. " element.")
+              end
+          end
+      end
+  </send>
+  </alias>
+  
+  <alias
+   match="^cc add (.*) (.*)$"
+   enabled="y"
+   send_to="12"
+   expand_variables="y"
+   sequence="100"
+   regexp="y"
+  >
+  <send>
+        -- Get the spell name and element from the input
+        local spell = "%1"
+        local element = "%2"
+        
+        -- Check if a spell name and element were provided
+        if spell == "" or element == "" then
+            Note("Please provide both spell name and element type.")
+        else
+            -- Initialize the element list if it doesn't exist
+            if not spellsTable[element] then
+                spellsTable[element] = {}
+            end
+            
+            -- Check if the spell is already in the list for that element
+            local exists = false
+            for _, v in ipairs(spellsTable[element]) do
+                if v == spell then
+                    exists = true
+                    break
+                end
+            end
+
+            if exists then
+                Note("Spell '" .. spell .. "' is already in the " .. element .. " list.")
+            else
+                -- Add the spell to the list for the given element
+                table.insert(spellsTable[element], spell)
+                Note("Spell '" .. spell .. "' has been added to the " .. element .. " list.")
+            end
+        end
+  </send>
+  </alias>
+  
+  <alias
+   match="^cc rem (.*) (.*)$"
+   enabled="y" 
+   send_to="12"
+   expand_variables="y"
+   regexp="y" 
+   sequence="100"
+   ignore_case="y"
+  >
+  <send>
+        -- Get the spell name and element from the input
+        local spell = "%1"
+        local element = "%2"
+        
+        -- Check if a spell name and element were provided
+        if spell == "" or element == "" then
+            Note("Please provide both spell name and element type to remove.")
+        else
+            -- Check if the element exists in the table
+            if spellsTable[element] then
+                -- Search for the spell in the list and remove it
+                local foundIndex = nil
+                for i, v in ipairs(spellsTable[element]) do
+                    if v == spell then
+                        foundIndex = i
+                        break
+                    end
+                end
+
+                if foundIndex then
+                    -- Remove the spell at the found index
+                    table.remove(spellsTable[element], foundIndex)
+                    Note("Spell '" .. spell .. "' has been removed from the " .. element .. " list.")
+                else
+                    Note("Spell '" .. spell .. "' not found in the " .. element .. " list.")
+                end
+            else
+                Note("No spells found for the " .. element .. " element.")
+            end
+        end
+  </send>
+  </alias>
+
+  <alias
+   match="^cc clear (.*)$"
+   enabled="y"
+   send_to="12"
+   expand_variables="y"
+   sequence="100"
+   regexp="y"
+   ignore_case="y"
+  >
+  <send>
+        -- Get the element (category) from the input
+        local element = "%1"
+        
+        -- Check if the element exists in the spellsTable
+        if element == "all" then
+            -- Clear all categories
+            spellsTable = {}
+            Note("All categories have been cleared.")
+        else
+            -- Clear the specific category (element)
+            if spellsTable[element] then
+                spellsTable[element] = nil  -- Remove the spells for that category
+                Note("All spells for " .. element .. " have been cleared.")
+            else
+                Note("No spells found for " .. element .. " element to clear.")
+            end
+        end
+  </send>
+</alias>
+
+  <alias
+   match="^cc (?!help|add|rem|list|clear)(.*)$"
+   enabled="y"
+   send_to="12"
+   expand_variables="y"
+   sequence="100"
+   regexp="y"
+   ignore_case="y"
+>
+  <send>
+        -- Get the element name from the input
+        local element = "%1"
+        
+        -- Initialize currentIndex as a simple number
+        currentIndex = currentIndex or 1
+
+        -- Check if the element has spells
+        if spellsTable[element] then
+            -- Get the current spell from the table using the current index
+            local spell = spellsTable[element][currentIndex]
+            
+            -- Cast the current spell using its name
+            Send("cast '" .. spell .. "'")
+
+            -- Notify the user
+            Note("Casting spell: " .. spell)
+
+            -- Move to the next spell in the list (cycle through)
+            currentIndex = currentIndex + 1
+            if currentIndex > #spellsTable[element] then
+                currentIndex = 1  -- Reset to the first spell if we reached the end
+            end
+        else
+            Note("No spells found for " .. element .. " element.")
+        end
+  </send>
+</alias>
+
+<alias
+   match="^ccx (.*) (.*)$"
+   enabled="y"
+   send_to="12"
+   expand_variables="y"
+   sequence="100"
+   regexp="y"
+   ignore_case="y"
+>
+  <send>
+        -- Get the element and mobname from the input
+        local element = "%1"
+		local mobname = "%2"
+        
+        -- Initialize currentIndex as a simple number
+        currentIndex = currentIndex or 1
+
+        -- Check if the element has spells
+        if spellsTable[element] then
+            -- Get the current spell from the table using the current index
+            local spell = spellsTable[element][currentIndex]
+            
+            -- Cast the current spell using its name
+            Send("cast '" .. spell .. "' ".. mobname)
+
+            -- Notify the user
+            Note("Casting spell: " .. spell)
+
+            -- Move to the next spell in the list (cycle through)
+            currentIndex = currentIndex + 1
+            if currentIndex > #spellsTable[element] then
+                currentIndex = 1  -- Reset to the first spell if we reached the end
+            end
+        else
+            Note("No spells found for " .. element .. " element.")
+        end
+  </send>
+</alias>
+
+</aliases>
+
+<script>
+<![CDATA[
+require "serialize"
+
+spellsTable = {}  -- A table to store spells by their element type
+currentIndex = 1  -- A simple number for tracking the index of spells
+
+function OnHelp ()
+  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+end
+
+function OnPluginSaveState ()
+  -- Save both spellsTable and currentIndex
+  SetVariable("spellsTable", "spellsTable = " .. serialize.save_simple(spellsTable))
+  SetVariable("currentIndex", "currentIndex = " .. serialize.save_simple(currentIndex))  -- Save currentIndex as a number
+end
+
+function OnPluginInstall ()
+  ColourNote("blue", "yellow", "Plugin Installed! Type cc help - to show help")
+  assert(loadstring(GetVariable("spellsTable") or ""))()
+  
+  -- Ensure currentIndex is a number
+  currentIndex = tonumber(GetVariable("currentIndex")) or 1
+end
+]]>
+</script>
+
+</muclient>
