@@ -81,6 +81,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
             Note("AoE spell is now: " .. spell)
           end
         end
+	 end
     </send>
   </trigger>
 
@@ -135,6 +136,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
             Note("AoE spell is now: " .. spell)
           end
         end
+	 end
     </send>
   </trigger>
 
