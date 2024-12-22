@@ -323,11 +323,30 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
    send_to="12"
    sequence="100"
   >
-    <send>-- get variable
+    <send>-- Get variable
 	atkspell = GetVariable("atkspell")
       -- Cast the attack spell
       if atkspell then
         Send("c '".. atkspell .."'")
+        Note("Casting attack spell: " .. atkspell)
+      else
+        Note("No primary attack spell selected.")
+      end
+    </send>
+  </alias>
+   <alias
+   match="aam atk *"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+  >
+    <send>-- Get variable
+	atkspell = GetVariable("atkspell")
+	local mobname = "%1"
+      -- Cast the attack spell
+      if atkspell then
+        Send("c '".. atkspell .."' ".. mobname)
         Note("Casting attack spell: " .. atkspell)
       else
         Note("No primary attack spell selected.")
@@ -343,7 +362,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
    send_to="12"
    sequence="100"
   >
-    <send>-- get variable
+    <send>-- Get variable
 	aoespell = GetVariable("aoespell")
       -- Cast the AoE spell
       if aoespell then
@@ -450,6 +469,7 @@ function OnHelp()
   Note("aam clear patk/aoe/all - Clear list from patk, aoe, or both.")
   Note("aam set atk/aoe [spell] - Set the atk or aoe spell.")
   Note("aam atk - Casts the spell set for atk.")
+  Note("aam atk [mobname] - Casts the spell set for atk at the target input.")
   Note("aam aoe - Casts the spell set for aoe.")
   Note("")
 end
