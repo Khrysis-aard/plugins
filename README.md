@@ -1,5 +1,7 @@
 # plugins
 
+Aoe_Atk_Manager - Lets you make a list of aoe and atk spells to be automatically updated while you level up and usable through built in aliases in plugin
+
 CycleCastSpells - Allows you to create lists of spells to cast from using simple commands. Make as many dif types of list and define your own command to cast through it.
 
 ft2_portal plugin - has riddles built in so no need for both plugins but Thief class is required for functionality to work                                                       
