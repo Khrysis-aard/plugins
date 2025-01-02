@@ -1,6 +1,6 @@
 # plugins
 
-Aoe_Atk_Manager - Lets you make a list of aoe and atk spells to be automatically updated while you level up and usable through built in aliases in plugin. It does not handle skills just spells atm it uses ' ' around spells and the Scholar wish is required atm since it matches on 95%.
+Aoe_Atk_Manager -  Automatically update aoe and atk variables based on the list you create and usable through built in aliases in plugin. It does not handle skills just spells atm it uses ' ' around spells and the Scholar wish is required atm since it matches on 95%. The aoe and atk variables will be automatically updated through remorts or tiers based on the list.
 
 CycleCastSpells - Allows you to create lists of spells to cast from using simple commands. Make as many dif types of list and define your own command to cast through it.
 
