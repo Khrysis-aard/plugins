@@ -201,13 +201,13 @@ type cc clear all : to clear all categories and spells
         -- Get the element name from the input
         local element = "%1"
         
-        -- Initialize currentIndex as a simple number
-        currentIndex = currentIndex or 1
+        -- Initialize currentIndex for the element if it doesn't exist
+        currentIndexes[element] = currentIndexes[element] or 1
 
         -- Check if the element has spells
         if spellsTable[element] then
-            -- Get the current spell from the table using the current index
-            local spell = spellsTable[element][currentIndex]
+            -- Get the current spell from the table using the current index for that element
+            local spell = spellsTable[element][currentIndexes[element]]
             
             -- Cast the current spell using its name
             Send("cast '" .. spell .. "'")
@@ -216,9 +216,9 @@ type cc clear all : to clear all categories and spells
             Note("Casting spell: " .. spell)
 
             -- Move to the next spell in the list (cycle through)
-            currentIndex = currentIndex + 1
-            if currentIndex > #spellsTable[element] then
-                currentIndex = 1  -- Reset to the first spell if we reached the end
+            currentIndexes[element] = currentIndexes[element] + 1
+            if currentIndexes[element] > #spellsTable[element] then
+                currentIndexes[element] = 1  -- Reset to the first spell if we reached the end
             end
         else
             Note("No spells found for " .. element .. " element.")
@@ -240,13 +240,13 @@ type cc clear all : to clear all categories and spells
         local element = "%1"
 		local mobname = "%2"
         
-        -- Initialize currentIndex as a simple number
-        currentIndex = currentIndex or 1
+        -- Initialize currentIndex for the element if it doesn't exist
+        currentIndexes[element] = currentIndexes[element] or 1
 
         -- Check if the element has spells
         if spellsTable[element] then
-            -- Get the current spell from the table using the current index
-            local spell = spellsTable[element][currentIndex]
+            -- Get the current spell from the table using the current index for that element
+            local spell = spellsTable[element][currentIndexes[element]]
             
             -- Cast the current spell using its name
             Send("cast '" .. spell .. "' ".. mobname)
@@ -255,9 +255,9 @@ type cc clear all : to clear all categories and spells
             Note("Casting spell: " .. spell)
 
             -- Move to the next spell in the list (cycle through)
-            currentIndex = currentIndex + 1
-            if currentIndex > #spellsTable[element] then
-                currentIndex = 1  -- Reset to the first spell if we reached the end
+            currentIndexes[element] = currentIndexes[element] + 1
+            if currentIndexes[element] > #spellsTable[element] then
+                currentIndexes[element] = 1  -- Reset to the first spell if we reached the end
             end
         else
             Note("No spells found for " .. element .. " element.")
@@ -272,20 +272,22 @@ type cc clear all : to clear all categories and spells
 require "serialize"
 
 spellsTable = {}  -- A table to store spells by their element type
-currentIndex = 1  -- A simple number for tracking the index of spells
+currentIndexes = {}  -- A table to store current indexes for each element
 
 function OnHelp ()
   world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
 end
 
 function OnPluginSaveState ()
-  -- Save both spellsTable and currentIndex
+  -- Save both spellsTable and currentIndexes
   SetVariable("spellsTable", "spellsTable = " .. serialize.save_simple(spellsTable))
+  SetVariable("currentIndexes", "currentIndexes = " .. serialize.save_simple(currentIndexes))
 end
 
 function OnPluginInstall ()
   ColourNote("blue", "yellow", "Plugin Installed! Type cc help - to show help")
   assert(loadstring(GetVariable("spellsTable") or ""))()
+  assert(loadstring(GetVariable("currentIndexes") or ""))()
 end
 ]]>
 </script>
