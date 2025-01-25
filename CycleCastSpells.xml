@@ -281,15 +281,11 @@ end
 function OnPluginSaveState ()
   -- Save both spellsTable and currentIndex
   SetVariable("spellsTable", "spellsTable = " .. serialize.save_simple(spellsTable))
-  SetVariable("currentIndex", "currentIndex = " .. serialize.save_simple(currentIndex))  -- Save currentIndex as a number
 end
 
 function OnPluginInstall ()
   ColourNote("blue", "yellow", "Plugin Installed! Type cc help - to show help")
   assert(loadstring(GetVariable("spellsTable") or ""))()
-  
-  -- Ensure currentIndex is a number
-  currentIndex = tonumber(GetVariable("currentIndex")) or 1
 end
 ]]>
 </script>
