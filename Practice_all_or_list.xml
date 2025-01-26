@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.01"
+   version="1.02"
    >
 
 </plugin>
@@ -773,7 +773,7 @@ function OnHelp ()
   ColourNote("blue","","|","cyan",""," cprac spellup :","yellow",""," toggles on/off                                                                          ","blue","","|")
   ColourNote("blue","","|","yellow","","                 Adds skills/spells spellup, curative, passive, movement all                             ","blue","","|")
   ColourNote("blue","","|","yellow","","                 Refreshes with what is currently available when toggled/entering game/tier              ","blue","","|")
-  ColourNote("blue","","|","yellow","","                 Works with cprac tier/custom/all                                                        ","blue","","|")
+  ColourNote("blue","","|","yellow","","                 Works with cprac tier/custom/all   Defaults to on                                       ","blue","","|")
   ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
   ColourNote("blue","","|","cyan",""," To add/remove list/tlist :","yellow",""," type custom skill/spellname or type tier skill/spellname                     ","blue","","|")
   ColourNote("blue","","|","yellow","","                            Ex: custom Bless adds Bless to the list and doing it again removes it        ","blue","","|")
