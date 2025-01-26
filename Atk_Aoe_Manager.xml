@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.2"
+   version="1.21"
    >
 <description trim="y">
 <![CDATA[
@@ -146,6 +146,21 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
 <!-- Aliases -->
 <aliases>
+   <alias 
+  match="aam update check" 
+  enabled="y" 
+  script="update_check_alias" 
+  sequence="99"
+  >
+  </alias>
+  
+  <alias 
+  match="aam update install" 
+  enabled="y" 
+  script="update_install_alias" 
+  sequence="99"
+  >
+  </alias>
   <!-- Add primary attack spell -->
   <alias
    match="aam add patk (.*)"
@@ -461,7 +476,6 @@ end
 
 -- Help function to explain how the plugin works
 function OnHelp()
-  Note("Plugin help: ")
   Note("")
   Note("The spells added to the list are the ones that you want to be set to the variables aoe or atk automatically.")
   Note("They will set to the variables if its the first time you got the spell or after a remort and you aquire it again at 95%.")
@@ -483,6 +497,10 @@ function OnHelp()
   Note("")
   Note("aam aoe - Casts the spell set for aoe.")
   Note("")
+  Note("aam update check - Checks for a update.")
+  Note("")
+  Note("aam update install - Installs the update.")
+  Note("")
 end
 
 -- Save the stored tables and reload them on new session
@@ -497,6 +515,103 @@ function OnPluginInstall ()
   assert(loadstring(GetVariable("Patk") or ""))()
   assert(loadstring(GetVariable("Aoe") or ""))()
 end
+
+ ----------------------- Plugin Update Code -----------------------
+ -- Code taken from Durel's dinv plugin, originally via Crowley
+ require("wait")
+require("async")
+json = require("json")
+
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Atk_Aoe_Manager.xml"
+ SetVariable("DownloadURL", plugin_url)
+ plugin_protocol = "HTTPS"
+ plugin_prefix = "[Atk_Aoe_Manager]"
+ 
+ function update_check_alias()
+     update_plugin("check")
+     ColourNote("white", "", plugin_prefix .. " Checking for updated version...")
+ end
+ 
+ function update_install_alias()
+     update_plugin("install")
+     ColourNote("white", "", plugin_prefix .. " Checking for and installing updated version...")
+ end
+ 
+ function reload_plugin()
+     local scriptPrefix = GetAlphaOption("script_prefix")
+     local retval
+ 
+     -- If the user has not already specified the script prefix for this version of mush, pick a
+     -- reasonable default value
+     if (scriptPrefix == "") then
+         scriptPrefix = "\\\\\\"
+         SetAlphaOption("script_prefix", scriptPrefix)
+     end
+ 
+     -- Tell mush to reload the plugin in one second.  We can't do it directly here because a
+     -- plugin can't unload itself.  Even if it could, how could it tell mush to load it again
+     -- if it weren't installed? 
+     retval = Execute(scriptPrefix.."DoAfterSpecial(0.1, \"ReloadPlugin('"..GetPluginID().."')\", sendto.script)")
+ end
+ 
+ function update_plugin(mode)
+     update_mode = mode
+ 
+     wait.make(get_plugin_file)
+ end
+ 
+ function get_plugin_file()
+     local urlThread = async.request(plugin_url, plugin_protocol)
+ 
+     if not urlThread then
+         note_error("Couldn't create async url request.")
+         return
+     end
+ 
+     local timeout = 10
+     local totTime = 0
+     while (urlThread:alive() and totTime < timeout) do
+         wait.time(0.1)
+         totTime = totTime + 0.1
+     end
+ 
+     local remoteRet, pluginData, status, headers, fullStatus = urlThread:join()
+ 
+     if not status then
+         ColourNote("red", "", plugin_prefix .. " Couldn't download plugin file. No status code.")
+         
+         return
+     end
+ 
+     if (status ~= 200) then
+         ColourNote("red", "", plugin_prefix .. " Plugin file request status code: " .. status .. ": " .. fullStatus)
+         return
+     end
+     
+     local currentVersion = GetPluginInfo(GetPluginID(), 19) or 0
+     local currentVerStr  = string.format("%1.3f", currentVersion)
+     local remoteVerStr   = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+     local remoteVersion  = tonumber(remoteVerStr or "") or 0
+ 
+     if remoteVersion == currentVersion then
+         ColourNote("white", "", plugin_prefix .. " You are running the most recent version (v" .. currentVerStr .. ")")
+     elseif (remoteVersion < currentVersion) then
+         ColourNote("white", "", plugin_prefix .. " You have a newer version than is publicly available. (v" .. currentVerStr .. ")")
+     elseif (update_mode == "check") then
+         ColourNote("white", "", plugin_prefix .. " You are running v" .. currentVerStr .. ", but there's a newer version v" .. remoteVerStr)
+     elseif (update_mode == "install") then
+         ColourNote("white", "", plugin_prefix .. " Updating plugin from version " .. currentVerStr .. " to version " .. remoteVerStr) 
+ 
+         local pluginFile = GetPluginInfo(GetPluginID(), 6)
+         local file = io.open(pluginFile, "wb")
+         file:write(pluginData)
+         file:close()
+         reload_plugin()
+     else
+         ColourNote("red", "", plugin_prefix .. " Invalid update mode: " .. update_mode)
+     end
+ end
+ ----------------------- End Plugin Update Code -----------------------
 ]]>
 </script>
 
