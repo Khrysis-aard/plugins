@@ -8,5 +8,7 @@ ft2_portal plugin - has riddles built in so no need for both plugins but Thief c
 
 Practice_all_or_list - Practice all or practice just things from lists you make. Keep up with only what you want to practice.
 
-wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)                       
+wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)
+
+Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list
 
