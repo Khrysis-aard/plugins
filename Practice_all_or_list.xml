@@ -15,12 +15,27 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.0"
+   version="1.01"
    >
 
 </plugin>
 
 <aliases>
+  <alias 
+  match="pal update check" 
+  enabled="y" 
+  script="update_check_alias" 
+  sequence="99"
+  >
+  </alias>
+  
+  <alias 
+  match="pal update install" 
+  enabled="y" 
+  script="update_install_alias" 
+  sequence="99"
+  >
+  </alias>
   <alias
    script="OnHelp"
    match="dprac help"
@@ -285,7 +300,14 @@
   local name = gmcp("char.base.name")
   local player = "%1"
    if name == player then
-   Note("testing for update spell list")
+    EnableTriggerGroup ("add_spells_skills", true)
+    SendNoEcho ("spells spellup all")
+    SendNoEcho ("skills spellup all")
+    SendNoEcho ("spells curative all")
+    SendNoEcho ("skills curative all")
+    SendNoEcho ("skills movement all")
+    SendNoEcho ("skills passive all")
+    SendNoEcho ("echo @cAdding@C...@cSpells and Skills@C...")
    update_spl = 0
   end</send>
   </trigger>
@@ -728,6 +750,10 @@ function OnHelp ()
   ColourNote("blue","","|","green",""," You can add 100 spells/skills to the forgetskill list built into game.                                  ","blue","","|")
   ColourNote("blue","","|","green",""," This plugin doesnt covert trains to practices to finish the list you will have to convert them yourself.","blue","","|")
   ColourNote("blue","","-----------------------------------------------------------------------------------------------------------")
+  ColourNote("blue","","|","cyan",""," pal update check :","yellow",""," Check for update                                                                     ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
+  ColourNote("blue","","|","cyan",""," pal update install :","yellow",""," Install new update                                                                 ","blue","","|")
+  ColourNote("blue","","|                                                                                                         |")
   ColourNote("blue","","|","cyan",""," dprac all :","yellow",""," Practices All available skills                                                              ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
   ColourNote("blue","","|","cyan",""," dprac list :","yellow",""," List All available skills to be practiced                                                  ","blue","","|")
@@ -784,6 +810,103 @@ function OnPluginSaveState ()
   SetVariable ("tskills_found", "tskills_found = " .. serialize.save_simple (tskills_found))
   SetVariable ("tskills_count", "tskills_count = " .. serialize.save_simple (tskills_count))
 end -- function OnPluginSaveState
+
+ ----------------------- Plugin Update Code -----------------------
+ -- Code taken from Durel's dinv plugin, originally via Crowley
+ require("wait")
+require("async")
+json = require("json")
+
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Practice_all_or_list.xml"
+ SetVariable("DownloadURL", plugin_url)
+ plugin_protocol = "HTTPS"
+ plugin_prefix = "[Practice_all_or_list]"
+ 
+ function update_check_alias()
+     update_plugin("check")
+     ColourNote("white", "", plugin_prefix .. " Checking for updated version...")
+ end
+ 
+ function update_install_alias()
+     update_plugin("install")
+     ColourNote("white", "", plugin_prefix .. " Checking for and installing updated version...")
+ end
+ 
+ function reload_plugin()
+     local scriptPrefix = GetAlphaOption("script_prefix")
+     local retval
+ 
+     -- If the user has not already specified the script prefix for this version of mush, pick a
+     -- reasonable default value
+     if (scriptPrefix == "") then
+         scriptPrefix = "\\\\\\"
+         SetAlphaOption("script_prefix", scriptPrefix)
+     end
+ 
+     -- Tell mush to reload the plugin in one second.  We can't do it directly here because a
+     -- plugin can't unload itself.  Even if it could, how could it tell mush to load it again
+     -- if it weren't installed? 
+     retval = Execute(scriptPrefix.."DoAfterSpecial(0.1, \"ReloadPlugin('"..GetPluginID().."')\", sendto.script)")
+ end
+ 
+ function update_plugin(mode)
+     update_mode = mode
+ 
+     wait.make(get_plugin_file)
+ end
+ 
+ function get_plugin_file()
+     local urlThread = async.request(plugin_url, plugin_protocol)
+ 
+     if not urlThread then
+         note_error("Couldn't create async url request.")
+         return
+     end
+ 
+     local timeout = 10
+     local totTime = 0
+     while (urlThread:alive() and totTime < timeout) do
+         wait.time(0.1)
+         totTime = totTime + 0.1
+     end
+ 
+     local remoteRet, pluginData, status, headers, fullStatus = urlThread:join()
+ 
+     if not status then
+         ColourNote("red", "", plugin_prefix .. " Couldn't download plugin file. No status code.")
+         
+         return
+     end
+ 
+     if (status ~= 200) then
+         ColourNote("red", "", plugin_prefix .. " Plugin file request status code: " .. status .. ": " .. fullStatus)
+         return
+     end
+     
+     local currentVersion = GetPluginInfo(GetPluginID(), 19) or 0
+     local currentVerStr  = string.format("%1.3f", currentVersion)
+     local remoteVerStr   = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+     local remoteVersion  = tonumber(remoteVerStr or "") or 0
+ 
+     if remoteVersion == currentVersion then
+         ColourNote("white", "", plugin_prefix .. " You are running the most recent version (v" .. currentVerStr .. ")")
+     elseif (remoteVersion < currentVersion) then
+         ColourNote("white", "", plugin_prefix .. " You have a newer version than is publicly available. (v" .. currentVerStr .. ")")
+     elseif (update_mode == "check") then
+         ColourNote("white", "", plugin_prefix .. " You are running v" .. currentVerStr .. ", but there's a newer version v" .. remoteVerStr)
+     elseif (update_mode == "install") then
+         ColourNote("white", "", plugin_prefix .. " Updating plugin from version " .. currentVerStr .. " to version " .. remoteVerStr) 
+ 
+         local pluginFile = GetPluginInfo(GetPluginID(), 6)
+         local file = io.open(pluginFile, "wb")
+         file:write(pluginData)
+         file:close()
+         reload_plugin()
+     else
+         ColourNote("red", "", plugin_prefix .. " Invalid update mode: " .. update_mode)
+     end
+ end
+ ----------------------- End Plugin Update Code -----------------------
 
 ]]>
 </script> 
