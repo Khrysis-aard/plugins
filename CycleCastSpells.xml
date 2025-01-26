@@ -13,7 +13,7 @@
    save_state="y"
    date_written="2024-12-15 23:12:46"
    requires="5.07"
-   version="1.0"
+   version="1.01"
    >
    <description trim="y">
 <![CDATA[
@@ -34,6 +34,10 @@ type ccx <group> <mobname> : to start fights or cast at specific mobs using the 
 type cc clear <group> : to clear all spells for the given element (e.g., cc clear fire)
 
 type cc clear all : to clear all categories and spells
+
+type cc update check : to check for updates
+
+type cc update install : to install new update
 =========================================================================================================
 ]]>
 </description>
@@ -41,6 +45,22 @@ type cc clear all : to clear all categories and spells
 </plugin>
 
 <aliases>
+  <alias 
+  match="cc update check" 
+  enabled="y" 
+  script="update_check_alias" 
+  sequence="99"
+  >
+  </alias>
+  
+  <alias 
+  match="cc update install" 
+  enabled="y" 
+  script="update_install_alias" 
+  sequence="99"
+  >
+  </alias>
+  
   <alias
    script="OnHelp"
    match="^cc help$"
@@ -289,6 +309,103 @@ function OnPluginInstall ()
   assert(loadstring(GetVariable("spellsTable") or ""))()
   assert(loadstring(GetVariable("currentIndexes") or ""))()
 end
+
+ ----------------------- Plugin Update Code -----------------------
+ -- Code taken from Durel's dinv plugin, originally via Crowley
+ require("wait")
+require("async")
+json = require("json")
+
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/CycleCastSpells.xml"
+ SetVariable("DownloadURL", plugin_url)
+ plugin_protocol = "HTTPS"
+ plugin_prefix = "[CycleCastSpells]"
+ 
+ function update_check_alias()
+     update_plugin("check")
+     ColourNote("white", "", plugin_prefix .. " Checking for updated version...")
+ end
+ 
+ function update_install_alias()
+     update_plugin("install")
+     ColourNote("white", "", plugin_prefix .. " Checking for and installing updated version...")
+ end
+ 
+ function reload_plugin()
+     local scriptPrefix = GetAlphaOption("script_prefix")
+     local retval
+ 
+     -- If the user has not already specified the script prefix for this version of mush, pick a
+     -- reasonable default value
+     if (scriptPrefix == "") then
+         scriptPrefix = "\\\\\\"
+         SetAlphaOption("script_prefix", scriptPrefix)
+     end
+ 
+     -- Tell mush to reload the plugin in one second.  We can't do it directly here because a
+     -- plugin can't unload itself.  Even if it could, how could it tell mush to load it again
+     -- if it weren't installed? 
+     retval = Execute(scriptPrefix.."DoAfterSpecial(0.1, \"ReloadPlugin('"..GetPluginID().."')\", sendto.script)")
+ end
+ 
+ function update_plugin(mode)
+     update_mode = mode
+ 
+     wait.make(get_plugin_file)
+ end
+ 
+ function get_plugin_file()
+     local urlThread = async.request(plugin_url, plugin_protocol)
+ 
+     if not urlThread then
+         note_error("Couldn't create async url request.")
+         return
+     end
+ 
+     local timeout = 10
+     local totTime = 0
+     while (urlThread:alive() and totTime < timeout) do
+         wait.time(0.1)
+         totTime = totTime + 0.1
+     end
+ 
+     local remoteRet, pluginData, status, headers, fullStatus = urlThread:join()
+ 
+     if not status then
+         ColourNote("red", "", plugin_prefix .. " Couldn't download plugin file. No status code.")
+         
+         return
+     end
+ 
+     if (status ~= 200) then
+         ColourNote("red", "", plugin_prefix .. " Plugin file request status code: " .. status .. ": " .. fullStatus)
+         return
+     end
+     
+     local currentVersion = GetPluginInfo(GetPluginID(), 19) or 0
+     local currentVerStr  = string.format("%1.3f", currentVersion)
+     local remoteVerStr   = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+     local remoteVersion  = tonumber(remoteVerStr or "") or 0
+ 
+     if remoteVersion == currentVersion then
+         ColourNote("white", "", plugin_prefix .. " You are running the most recent version (v" .. currentVerStr .. ")")
+     elseif (remoteVersion < currentVersion) then
+         ColourNote("white", "", plugin_prefix .. " You have a newer version than is publicly available. (v" .. currentVerStr .. ")")
+     elseif (update_mode == "check") then
+         ColourNote("white", "", plugin_prefix .. " You are running v" .. currentVerStr .. ", but there's a newer version v" .. remoteVerStr)
+     elseif (update_mode == "install") then
+         ColourNote("white", "", plugin_prefix .. " Updating plugin from version " .. currentVerStr .. " to version " .. remoteVerStr) 
+ 
+         local pluginFile = GetPluginInfo(GetPluginID(), 6)
+         local file = io.open(pluginFile, "wb")
+         file:write(pluginData)
+         file:close()
+         reload_plugin()
+     else
+         ColourNote("red", "", plugin_prefix .. " Invalid update mode: " .. update_mode)
+     end
+ end
+ ----------------------- End Plugin Update Code -----------------------
 ]]>
 </script>
 
