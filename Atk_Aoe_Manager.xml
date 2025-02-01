@@ -15,12 +15,13 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.21"
+   version="1.22"
    >
 <description trim="y">
 <![CDATA[
-This plugin allows you to dynamically add and remove attack and AoE spells using the 'aam add' and 'aam rem' aliases. 
-The triggers will now check these tables for spell matches, with regex dynamically updated.
+This plugin allows you to add and remove attack and AoE spells using the 'aam add' and 'aam rem' aliases.
+These go on a list that it will keep updated as you aquire the spells on it or as you get higher level ones on the list.
+This keeps your atk and aoe variables automatically updated based on what you want.
 You can also list the current attack and AoE spells with 'aam list patk', 'aam list aoe', or 'aam list all'.
 ]]>
 </description>
@@ -89,7 +90,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 <trigger
    enabled="y"
    group="set spell (95%)"
-   match="^Spell (.*)\. \(95\%\)$"
+   match="^Spell (.*)\. \((95|85)\%\)$"
    regexp="y"
    expand_variables="y"
    send_to="12"
@@ -478,8 +479,8 @@ end
 function OnHelp()
   Note("")
   Note("The spells added to the list are the ones that you want to be set to the variables aoe or atk automatically.")
-  Note("They will set to the variables if its the first time you got the spell or after a remort and you aquire it again at 95%.")
-  Note("You need the Scholar wish so that everything is practiced to 95% when you reaquire it for the triggers to catch the variable.")
+  Note("They will set to the variables automatically as you level or when u remort and practice the first time.")
+  Note("If the spell is capped at 85% or 95% it will be updated for aoe or atk based on your lists.")
   Note("")
   Note("aam add patk/aoe [spell] - Add a primary attack or aoe spell to the list.")
   Note("")
