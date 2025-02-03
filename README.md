@@ -10,5 +10,5 @@ Practice_all_or_list - Practice all or practice just things from lists you make.
 
 wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)
 
-Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list
+Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, Ft2_portal
 
