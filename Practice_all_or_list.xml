@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.02"
+   version="1.03"
    >
 
 </plugin>
@@ -824,12 +824,12 @@ json = require("json")
  
  function update_check_alias()
      update_plugin("check")
-     ColourNote("white", "", plugin_prefix .. " Checking for updated version...")
+     ColourNote("yellow", "", plugin_prefix .. "","white",""," Checking for updated version...")
  end
  
  function update_install_alias()
      update_plugin("install")
-     ColourNote("white", "", plugin_prefix .. " Checking for and installing updated version...")
+     ColourNote("yellow", "", plugin_prefix .. "","white",""," Checking for and installing updated version...")
  end
  
  function reload_plugin()
@@ -889,13 +889,13 @@ json = require("json")
      local remoteVersion  = tonumber(remoteVerStr or "") or 0
  
      if remoteVersion == currentVersion then
-         ColourNote("white", "", plugin_prefix .. " You are running the most recent version (v" .. currentVerStr .. ")")
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You are running the most recent version. (","cyan","","v" .. currentVerStr .. "","white","",")")
      elseif (remoteVersion < currentVersion) then
-         ColourNote("white", "", plugin_prefix .. " You have a newer version than is publicly available. (v" .. currentVerStr .. ")")
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You have a newer version than is publicly available. (","cyan","","v" .. currentVerStr .. "","white","",")")
      elseif (update_mode == "check") then
-         ColourNote("white", "", plugin_prefix .. " You are running v" .. currentVerStr .. ", but there's a newer version v" .. remoteVerStr)
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You are running ","cyan","","v" .. currentVerStr .. "","white",""," , but there's a newer version ","cyan","","v" .. remoteVerStr)
      elseif (update_mode == "install") then
-         ColourNote("white", "", plugin_prefix .. " Updating plugin from version " .. currentVerStr .. " to version " .. remoteVerStr) 
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," Updating plugin from version ","cyan","", currentVerStr .. "","white",""," to version ","cyan","", remoteVerStr .."") 
  
          local pluginFile = GetPluginInfo(GetPluginID(), 6)
          local file = io.open(pluginFile, "wb")
