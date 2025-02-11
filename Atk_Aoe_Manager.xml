@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.24"
+   version="1.30"
    >
 <description trim="y">
 <![CDATA[
@@ -42,10 +42,10 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
    sequence="100"
   >
     <send>
-      -- Get the spell name
+      -- Get the spell/skill name
       local spell = "%1"
       local found = false
-      local spellCategory = nil  -- Track the spell category (Patk or Aoe)
+      local spellCategory = nil  -- Track the category (Patk, Aoe, or Skill)
 
       -- Check Patk first
       for _, v in ipairs(Patk) do
@@ -67,7 +67,18 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
         end
       end
 
-      -- If the spell is found, update the appropriate variable
+      -- If not found in Aoe, check Skills
+      if not found then
+        for _, v in ipairs(Skills) do
+          if string.lower(v) == string.lower(spell) then
+            spellCategory = "skill"
+            found = true
+            break
+          end
+        end
+      end
+
+      -- If the spell/skill is found, update the appropriate variable
       if found then
         if spellCategory == "atk" then
           local currentSpell = GetVariable("atkspell")
@@ -81,8 +92,14 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
             SetVariable("aoespell", spell)
             Note("AoE spell is now: " .. spell)
           end
+        elseif spellCategory == "skill" then
+          local currentSkill = GetVariable("skill")
+          if string.lower(currentSkill) ~= string.lower(spell) then
+            SetVariable("skill", spell)
+            Note("Skill is now: " .. spell)
+          end
         end
-	 end
+      end
     </send>
   </trigger>
 
@@ -90,17 +107,17 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 <trigger
    enabled="y"
    group="set spell (95%)"
-   match="^Spell (.*)\. \((95|85)\%\)$"
+   match="^(Spell|Skill) (.*)\. \((95|85)\%\)$"
    regexp="y"
    expand_variables="y"
    send_to="12"
    sequence="100"
   >
     <send>
-      -- Get the spell name
-      local spell = "%1"
+      -- Get the spell/skill name
+      local spell = "%2"
       local found = false
-      local spellCategory = nil  -- Track the spell category (Patk or Aoe)
+      local spellCategory = nil  -- Track the category (Patk, Aoe, or Skill)
 
       -- Check Patk first
       for _, v in ipairs(Patk) do
@@ -122,7 +139,18 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
         end
       end
 
-      -- If the spell is found, update the appropriate variable
+      -- If not found in Aoe, check Skills
+      if not found then
+        for _, v in ipairs(Skills) do
+          if string.lower(v) == string.lower(spell) then
+            spellCategory = "skill"
+            found = true
+            break
+          end
+        end
+      end
+
+      -- If the spell/skill is found, update the appropriate variable
       if found then
         if spellCategory == "atk" then
           local currentSpell = GetVariable("atkspell")
@@ -136,8 +164,14 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
             SetVariable("aoespell", spell)
             Note("AoE spell is now: " .. spell)
           end
+        elseif spellCategory == "skill" then
+          local currentSkill = GetVariable("skill")
+          if string.lower(currentSkill) ~= string.lower(spell) then
+            SetVariable("skill", spell)
+            Note("Skill is now: " .. spell)
+          end
         end
-	 end
+      end
     </send>
   </trigger>
 
@@ -278,9 +312,9 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
     </send>
   </alias>
 
-  <!-- List Primary Attack Spells, AoE Spells, or Both -->
+  <!-- List Primary Attack Spells, AoE Spells, Skills or All -->
   <alias
-   match="aam list (all|patk|aoe)"
+   match="aam list (all|patk|aoe|skill|shortsyntax)"
    enabled="y"
    group="attack"
    send_to="12"
@@ -303,10 +337,25 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
         else
           Note("AoE Spells: " .. table.concat(Aoe, ", "))
         end
+      elseif listType == "skill" then
+        if #Skills == 0 then
+          Note("No skills available.")
+        else
+          Note("Skills: " .. table.concat(Skills, ", "))
+        end
+	  elseif listType == "shortsyntax" then
+      if next(SkillShortSyntax) == nil then  -- Check if table is empty
+        Note("No short syntax defined for any skills.")
       else
-        -- For "all", show both Patk and Aoe
-        if #Patk == 0 and #Aoe == 0 then
-          Note("No spells available.")
+        Note("Short syntax you have:")
+        for skill, syntax in pairs(SkillShortSyntax) do
+          Note(skill .. " -> " .. syntax)
+        end
+      end
+      else
+        -- For "all", show Patk, Aoe, and Skills
+        if #Patk == 0 and #Aoe == 0 and #Skills == 0 then
+          Note("No spells or skills available.")
         else
           if #Patk > 0 then
             Note("Primary Attack Spells: " .. table.concat(Patk, ", "))
@@ -318,10 +367,16 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
           else
             Note("No AoE spells available.")
           end
+          if #Skills > 0 then
+            Note("Skills: " .. table.concat(Skills, ", "))
+          else
+            Note("No skills available.")
+          end
         end
       end
     </send>
   </alias>
+
 
   <!-- Show Help -->
   <alias
@@ -420,16 +475,16 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
     </send>
   </alias>
 
-  <!-- Clear primary attack or AoE or both spells -->
-  <alias
-   match="aam clear (patk|aoe|all)"
+<!-- Clear primary attack or AoE or skill or all -->
+<alias
+   match="aam clear (patk|aoe|skill|shortsyntax|all)"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
    expand_variables="y"
    regexp="y"
-  >
+>
     <send>
       local target = "%1"
       if target == "patk" then
@@ -442,16 +497,199 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
         Aoe = {}
         SetVariable("Aoe", "Aoe = {}")
         Note("Cleared all AoE spells.")
+      elseif target == "skill" then
+        -- Clear all skills
+        Skills = {}
+        SetVariable("Skills", "Skills = {}")
+        Note("Cleared all skills.")
+	  elseif target == "shortsyntax" then
+	    -- Clear all Short syntax
+		SkillShortSyntax = {}
+		SetVariable("SkillShortSyntax", "SkillShortSyntax = {}")
+		Note("Cleared all Short syntax.")
       else
-        -- Clear both primary attack and AoE spells
+        -- Clear both primary attack, AoE spells, and skills
         Patk = {}
         Aoe = {}
+        Skills = {}
         SetVariable("Patk", "Patk = {}")
         SetVariable("Aoe", "Aoe = {}")
-        Note("Cleared all primary attack and AoE spells.")
+        SetVariable("Skills", "Skills = {}")
+        Note("Cleared all primary attack spells, AoE spells, and skills.")
+      end
+    </send>
+</alias>
+
+  
+  <!-- New aliases for skills -->
+  
+  <!-- Set the skill -->
+<alias
+   match="aam set skill (.*)"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+   regexp="y"
+>
+  <send>
+    skill = "%1"
+    SetVariable("skill", "%1")
+    Note("Set the primary skill to: " .. skill)
+  </send>
+</alias>
+
+  
+  <!-- Add Skill -->
+<alias
+   match="aam add skill (.*)"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+   expand_variables="y"
+   regexp="y"
+  >
+    <send>local skill = "%1"
+      -- Add skill to the Skills table (case-insensitive check for existing skill)
+      local found = false
+      for _, v in ipairs(Skills) do
+        if string.lower(v) == string.lower(skill) then
+          found = true
+          break
+        end
+      end
+      if not found then
+        table.insert(Skills, skill)
+        Note("Added skill: " .. skill)
+      else
+        Note("Skill already exists in the list.")
       end
     </send>
   </alias>
+
+<!-- Remove Skill -->
+<alias
+   match="aam rem skill (.*)"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+   expand_variables="y"
+   regexp="y"
+  >
+    <send>
+      local skill = "%1"
+      -- Find the index of the skill in the Skills table (case-insensitive)
+      local index = nil
+      for i, v in ipairs(Skills) do
+        if string.lower(v) == string.lower(skill) then
+          index = i
+          break
+        end
+      end
+      -- Remove skill if found
+      if index then
+        table.remove(Skills, index)
+        Note("Removed skill: " .. skill)
+      else
+        Note("Skill not found in the list.")
+      end
+    </send>
+  </alias>
+  
+<!-- Cast Skill -->
+<alias
+   match="aam skill"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+>
+    <send>-- Get variable
+	skill = GetVariable("skill")
+    -- Check if the skill has a short syntax set
+    local shortSkill = SkillShortSyntax[string.lower(skill)]
+    if shortSkill then
+        skill = shortSkill  -- Use the short syntax
+    end
+    -- Cast the skill
+    if skill then
+        Send(skill)
+        Note("Casting skill: " .. skill)
+    else
+        Note("No skill selected.")
+    end
+    </send>
+</alias>
+
+
+<!-- Cast Skill with Target -->
+
+<alias
+   match="aam skill *"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+>
+    <send>-- Get variable
+	skill = GetVariable("skill")
+    -- Check if the skill has a short syntax set
+    local shortSkill = SkillShortSyntax[string.lower(skill)]
+    if shortSkill then
+        skill = shortSkill  -- Use the short syntax
+    end
+    local mobname = "%1"
+    -- Cast the skill
+    if skill then
+        Send(skill .." ".. mobname)
+        Note("Casting skill: " .. skill)
+    else
+        Note("No skill selected.")
+    end
+    </send>
+</alias>
+
+
+<!-- Set the skill short syntax -->
+<alias
+   match="aam setskill (.*) to (.*)"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+   regexp="y"
+>
+  <send>
+    local skill = "%1"
+    local shortSyntax = "%2"
+    -- Store the short syntax for the skill
+    SkillShortSyntax[string.lower(skill)] = string.lower(shortSyntax)
+    Note("Set the short syntax for skill '" .. skill .. "' to: " .. shortSyntax)
+  </send>
+</alias>
+
+<!-- Show the short syntax for a skill -->
+<alias
+   match="aam showskill (.*)"
+   enabled="y"
+   group="attack"
+   send_to="12"
+   sequence="100"
+   regexp="y"
+>
+  <send>
+    local skill = "%1"
+    local shortSyntax = SkillShortSyntax[string.lower(skill)]
+    if shortSyntax then
+        Note("The short syntax for skill '" .. skill .. "' is: " .. shortSyntax)
+    else
+        Note("No short syntax set for skill '" .. skill .. "'")
+    end
+  </send>
+</alias>
+
 
 </aliases>
 
@@ -464,6 +702,8 @@ require "serialize"
 -- Initialize the tables for storing attack and AoE spells
 Patk = {}
 Aoe = {}
+Skills = {}
+SkillShortSyntax = {}
 
 -- Function to check if a value exists in a table (case-insensitive)
 function table.contains(tbl, val)
@@ -478,23 +718,32 @@ end
 -- Help function to explain how the plugin works
 function OnHelp()
   Note("")
-  Note("The spells added to the list are the ones that you want to be set to the variables aoe or atk automatically.")
-  Note("They will set to the variables automatically as you level or when u remort and practice the first time.")
-  Note("If the spell is capped at 85% or 95% it will be updated for aoe or atk based on your lists.")
+  Note("Keeps your Aoe, Atk or Skill variables updated automatically based on what is added to the lists for each.")
+  Note("They will be set to the variables automatically as you level or when u remort and practice the first time.")
+  Note("As long as its practiced to 85% or 95% it will be updated for aoe, atk, or skill based on your lists.")
   Note("")
-  Note("aam add patk/aoe [spell] - Add a primary attack or aoe spell to the list.")
+  Note("aam add patk/aoe/skill [spell or skill] - Add a primary attack, skill, or aoe spell to the list.")
   Note("")
-  Note("aam rem patk/aoe [spell] - Remove a primary attack or aoe spell from the list.")
+  Note("aam rem patk/aoe/skill [spell or skill] - Remove a primary attack, skill, or aoe spell from the list.")
   Note("")
-  Note("aam list patk/aoe/all - List spells from patk, aoe, or both.")
+  Note("aam list patk/aoe/skill/shortsyntax/all - List spells from patk, aoe, skill, shortsyntax, or all.")
   Note("")
-  Note("aam clear patk/aoe/all - Clear list from patk, aoe, or both.")
+  Note("aam clear patk/aoe/skill/shortsyntax/all - Clear list from patk, aoe, skill, shortsyntax, or all.")
   Note("")
-  Note("aam set atk/aoe [spell] - Set the atk or aoe spell.")
+  Note("aam set atk/aoe/skill [spell or skill] - Set the atk, skill, or aoe spell.")
   Note("")
   Note("aam atk - Casts the spell set for atk.")
   Note("")
   Note("aam atk [mobname] - Casts the spell set for atk at the target input.")
+  Note("")
+  Note("aam skill - Uses current set skill.")
+  Note("")
+  Note("aam skill [mobname] - Uses current set skill on target.")
+  Note("")
+  Note("aam setskill [skillname] to [shortsyntax] - Sets the shortsyntax to use when using the skill")
+  Note("                                           Example: aam setskill Cobra Bane to cobra or aam setskill cobra bane to cobra")
+  Note("")
+  Note("aam showskill [skillname] - Will show the shortsyntax set for the given skill.")
   Note("")
   Note("aam aoe - Casts the spell set for aoe.")
   Note("")
@@ -509,12 +758,16 @@ function OnPluginSaveState ()
   -- Save both spellsTable and currentIndex
   SetVariable("Patk", "Patk = " .. serialize.save_simple(Patk))
   SetVariable("Aoe", "Aoe = " .. serialize.save_simple(Aoe))
+  SetVariable("Skills", "Skills = " .. serialize.save_simple(Skills))
+  SetVariable("SkillShortSyntax", "SkillShortSyntax = " .. serialize.save_simple(SkillShortSyntax))
 end
 
 function OnPluginInstall ()
   ColourNote("blue", "yellow", "Plugin Installed! Type aam help - to show help")
   assert(loadstring(GetVariable("Patk") or ""))()
   assert(loadstring(GetVariable("Aoe") or ""))()
+  assert(loadstring(GetVariable("Skills") or ""))()
+  assert(loadstring(GetVariable("SkillShortSyntax") or ""))()
 end
 
  ----------------------- Plugin Update Code -----------------------
