@@ -13,31 +13,36 @@
    save_state="y"
    date_written="2024-12-15 23:12:46"
    requires="5.07"
-   version="1.02"
+   version="1.03"
    >
    <description trim="y">
 <![CDATA[
 =========================================================================================================
-type cc help : to show this help file
 
-type cc add <spellname> <group> : to add spells to list with their group type ( ex: cc add fireball fire
-                                  or can be as simple as cc add fireball a) cc a or cc fire would work
+cc help : to show this help file
 
-type cc rem <spellname> <group> : to remove spells from list by spellname and element type
+cc add <spellname> <group> : to add spells to list with their group type 
+                 ex: cc add fireball fire (usage cc fire)
+				 ex: cc add fireball a    (usage cc a)
+				 ex: cc add dispel bad    (usage cc bad)
+				 
 
-type cc list : to show the list of spells for the each element type
+cc rem <spellname> <group> : to remove spells from list by spellname and element type
 
-type cc <group> : to cast spells of the given element in the order of the list, one at a time
+cc list : to show the list of spells for the each element type
 
-type ccx <group> <mobname> : to start fights or cast at specific mobs using the list used
+cc <group> : to cast spells of the given element in the order of the list, one at a time
 
-type cc clear <group> : to clear all spells for the given element (e.g., cc clear fire)
+ccx <group> <mobname> : to start fights or cast at specific mobs using the list used
 
-type cc clear all : to clear all categories and spells
+cc clear <group> : to clear all spells for the given element (e.g., cc clear fire)
 
-type cc update check : to check for updates
+cc clear all : to clear all categories and spells
 
-type cc update install : to install new update
+cc update check : to check for updates
+
+cc update install : to install new update
+
 =========================================================================================================
 ]]>
 </description>
