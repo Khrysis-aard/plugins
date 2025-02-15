@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2021-02-20 10:51:07"
    requires="5.07"
-   version="1.01"
+   version="1.02"
    >
 <description trim="y">
 <![CDATA[
@@ -462,6 +462,22 @@ ColourNote ("blue","yellow","Type heart for alias")
   >
   <send>say summon the hangman</send>
   </trigger>
+   <trigger
+   enabled="y"
+   group="ft2"
+   match="Who sold the Emperor's diamond?"
+   sequence="100"
+  >
+  <send>say King Tharibold the IV</send>
+  </trigger>
+  <trigger
+   enabled="y"
+   group="ft2"
+   match="What is the first ingredient of lip balm?"
+   sequence="100"
+  >
+  <send>say Trioxeline Dioxide (extracted from halfling livers)</send>
+  </trigger>
   <trigger
    enabled="y"
    group="ft2"
@@ -612,8 +628,7 @@ ColourNote ("blue","yellow","Type heart for alias")
    match="What is the first thing the miller's wife wished for?"
    sequence="100"
   >
-  <send>say I wish for a counter that magically cleaned itself!
-say I wish...I wish...</send>
+  <send>say I wish I had children, so they could clean up this mess!</send>
   </trigger>
   <trigger
    enabled="y"
@@ -698,7 +713,7 @@ say I wish...I wish...</send>
   <trigger
    enabled="y"
    group="ft2"
-   match="What did alice do?"
+   match="What did Alice do?"
    sequence="100"
   >
   <send>say Tripped in a rabbit hole and broke her foot</send>
