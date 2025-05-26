@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.04"
+   version="1.041"
   >
 </plugin>
 
@@ -406,7 +406,7 @@ end
       pt remove <name>      - Remove a potion name from the approved list
       pt list               - Show approved potion names
       pt update check       - Checks for new version
-      pt upate install      - Installs new version
+      pt update install      - Installs new version
       pt untracked on|off   - Show or hide notices for untracked potions
 	  
       pt color reset                 - Reset color thresholds to default values  
