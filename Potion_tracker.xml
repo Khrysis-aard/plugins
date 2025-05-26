@@ -323,12 +323,12 @@ end
       pt hide      - Hide the miniwindow
       pt reset     - Reset tracked potions
       pt help      - Show this help message
-	  pt add <name>         - Add a potion name to the approved list
+      pt add <name>         - Add a potion name to the approved list
       pt set <name> <count> - Set count of an approved potion
-	  pt remove <name>      - Remove a potion name from the approved list
+      pt remove <name>      - Remove a potion name from the approved list
       pt list               - Show approved potion names
-	  pt update check       - Checks for new version
-	  pt upate install      - Installs new version
+      pt update check       - Checks for new version
+      pt upate install      - Installs new version
 
     Potions are tracked automatically when you buy or quaff them.
     The miniwindow color-codes quantities:
