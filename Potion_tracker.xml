@@ -15,11 +15,32 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.03"
+   version="1.04"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^pt untracked (on|off)$"
+      enabled="y"
+      regexp="y"
+      script="ToggleUntrackedMessages"
+    >
+    </alias>
+	<alias
+      match="^pt color reset$"
+      enabled="y"
+      regexp="y"
+      script="ResetColorThresholds"
+    >
+    </alias>
+	<alias
+      match="^pt color (\d+) (\d+) (\d+)$"
+      enabled="y"
+      regexp="y"
+      script="SetColorThresholds"
+    >
+    </alias>
 	<alias
       match="^pt set (.+) (\d+)$"
       enabled="y"
@@ -134,8 +155,10 @@
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, 10, Dina, 10, 1000, 5, true, false)
     
+	show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
 	approved_potions = approved_potions or {}
 	potion_inventory = potion_inventory or {}
+	color_thresholds = color_thresholds or { low = 4, medium = 9, high = 14 }
 	
 	  -- Hide the miniwindow
 	function hide_mw()
@@ -150,11 +173,16 @@
     function OnPluginSaveState()
       -- Save the inventory when plugin state is saved
       SetVariable("potion_inventory", serialize.save("potion_inventory"))
+	  SetVariable("color_thresholds", serialize.save("color_thresholds"))
     end
 
     function OnPluginInstall()
       local saved_inventory = GetVariable("potion_inventory")
-      if saved_inventory then
+      local saved_thresholds = GetVariable("color_thresholds")
+      if saved_thresholds then
+        color_thresholds = serialize.load(saved_thresholds) or color_thresholds
+    end
+	  if saved_inventory then
         potion_inventory = serialize.load(saved_inventory) or {}
       end
 
@@ -168,7 +196,47 @@
       ShowHelp()
     end
 
-    function SetPotionCount(name, line, wildcards)
+    function ToggleUntrackedMessages(name, line, wildcards)
+      local mode = wildcards[1]
+      show_untracked_messages = (mode == "on")
+      SetVariable("show_untracked_messages", tostring(show_untracked_messages))
+      Note("Untracked message display is now " .. (show_untracked_messages and "ON" or "OFF"))
+    end
+
+	function ResetColorThresholds()
+      color_thresholds = { low = 4, medium = 9, high = 14 }
+      SetVariable("color_thresholds", serialize.save("color_thresholds"))
+      Note("Color thresholds reset to default: low=4, medium=9, high=14")
+      refresh_miniwindow()
+    end
+
+	
+	function SetColorThresholds(name, line, wildcards)
+      local low = tonumber(wildcards[1])
+      local medium = tonumber(wildcards[2])
+      local high = tonumber(wildcards[3])
+
+      if not (low and medium and high) then
+        Note("Invalid numbers. Usage: pt color <low> <medium> <high>")
+        return
+      end
+
+      if not (low < medium and medium < high) then
+        Note("Thresholds must be increasing: low < medium < high")
+        return
+      end
+
+      color_thresholds.low = low
+      color_thresholds.medium = medium
+      color_thresholds.high = high
+
+      SetVariable("color_thresholds", serialize.save("color_thresholds"))
+      Note(string.format("Color thresholds set to: low=%d, medium=%d, high=%d", low, medium, high))
+      refresh_miniwindow()
+    end
+
+	
+	function SetPotionCount(name, line, wildcards)
       local raw_name = wildcards[1]
       local count = tonumber(wildcards[2])
       local potion_name = normalize_potion_name(raw_name)
@@ -233,7 +301,9 @@
       local potion_name = normalize_potion_name(raw_name)
 
       if not approved_potions[potion_name] then
-        Note("Ignoring unapproved item: " .. potion_name)
+        if show_untracked_messages then
+          Note("Ignoring unapproved item: " .. potion_name)
+        end
         return
       end
 
@@ -248,7 +318,9 @@
       local potion_name = normalize_potion_name(raw_name)
       
 	  if not approved_potions[potion_name] then
-        Note("Ignoring unapproved item: " .. potion_name)
+        if show_untracked_messages then
+          Note("Ignoring unapproved item: " .. potion_name)
+        end
         return
       end
 	  
@@ -262,7 +334,9 @@
       local potion_name = normalize_potion_name(raw_name)
 
       if not approved_potions[potion_name] then
-        Note("Ignoring unapproved item: " .. potion_name)
+        if show_untracked_messages then
+          Note("Ignoring unapproved item: " .. potion_name)
+        end
         return
       end
 
@@ -297,11 +371,15 @@
   local any = false
   for potion, count in pairs(potion_inventory) do
     local color = "@G"
-    if count <= 4 then
+    local low = color_thresholds.low
+    local med = color_thresholds.medium
+    local high = color_thresholds.high
+
+    if count <= low then
       color = "@R"
-    elseif count <= 9 then
+    elseif count <= med then
       color = "@M"
-    elseif count <= 14 then
+    elseif count <= high then
       color = "@Y"
     end
 
@@ -329,6 +407,16 @@ end
       pt list               - Show approved potion names
       pt update check       - Checks for new version
       pt upate install      - Installs new version
+      pt untracked on|off   - Show or hide notices for untracked potions
+	  
+      pt color reset                 - Reset color thresholds to default values  
+	  pt color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
+        pt color 3 7 12 will make:
+                                  Red: 0-3
+                                  Magenta: 4-7
+                                  Yellow: 8-12
+                                  Green: 13+
+
 
     Potions are tracked automatically when you buy or quaff them.
     The miniwindow color-codes quantities:
