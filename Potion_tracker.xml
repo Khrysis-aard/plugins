@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.0"
+   version="1.01"
   >
 </plugin>
 
@@ -28,6 +28,20 @@
       regexp="y"
       sequence="3"
     >
+	</alias>
+	<alias 
+      match="pt update check" 
+      enabled="y" 
+      script="update_check_alias" 
+      sequence="99"
+      >
+     </alias>  
+     <alias 
+      match="pt update install" 
+      enabled="y" 
+      script="update_install_alias" 
+      sequence="99"
+      >
     </alias>
 	<alias 
 	 match="^pt reset$"
@@ -209,6 +223,8 @@ end
       pt hide      - Hide the miniwindow
       pt reset     - Reset tracked potions
       pt help      - Show this help message
+	  pt update check - Checks for new version
+	  pt upate install - Installs new version
 
     Potions are tracked automatically when you buy or quaff them.
     The miniwindow color-codes quantities:
@@ -239,6 +255,103 @@ end
       end
 
     }
+	
+	 ----------------------- Plugin Update Code -----------------------
+ -- Code taken from Durel's dinv plugin, originally via Crowley
+ require("wait")
+require("async")
+json = require("json")
+
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Potion_tracker.xml"
+ SetVariable("DownloadURL", plugin_url)
+ plugin_protocol = "HTTPS"
+ plugin_prefix = "[Potion_tracker]"
+ 
+ function update_check_alias()
+     update_plugin("check")
+     ColourNote("yellow", "", plugin_prefix .. "","white",""," Checking for updated version...")
+ end
+ 
+ function update_install_alias()
+     update_plugin("install")
+     ColourNote("yellow", "", plugin_prefix .. "","white",""," Checking for and installing updated version...")
+ end
+ 
+ function reload_plugin()
+     local scriptPrefix = GetAlphaOption("script_prefix")
+     local retval
+ 
+     -- If the user has not already specified the script prefix for this version of mush, pick a
+     -- reasonable default value
+     if (scriptPrefix == "") then
+         scriptPrefix = "\\\\\\"
+         SetAlphaOption("script_prefix", scriptPrefix)
+     end
+ 
+     -- Tell mush to reload the plugin in one second.  We can't do it directly here because a
+     -- plugin can't unload itself.  Even if it could, how could it tell mush to load it again
+     -- if it weren't installed? 
+     retval = Execute(scriptPrefix.."DoAfterSpecial(0.1, \"ReloadPlugin('"..GetPluginID().."')\", sendto.script)")
+ end
+ 
+ function update_plugin(mode)
+     update_mode = mode
+ 
+     wait.make(get_plugin_file)
+ end
+ 
+ function get_plugin_file()
+     local urlThread = async.request(plugin_url, plugin_protocol)
+ 
+     if not urlThread then
+         note_error("Couldn't create async url request.")
+         return
+     end
+ 
+     local timeout = 10
+     local totTime = 0
+     while (urlThread:alive() and totTime < timeout) do
+         wait.time(0.1)
+         totTime = totTime + 0.1
+     end
+ 
+     local remoteRet, pluginData, status, headers, fullStatus = urlThread:join()
+ 
+     if not status then
+         ColourNote("red", "", plugin_prefix .. " Couldn't download plugin file. No status code.")
+         
+         return
+     end
+ 
+     if (status ~= 200) then
+         ColourNote("red", "", plugin_prefix .. " Plugin file request status code: " .. status .. ": " .. fullStatus)
+         return
+     end
+     
+     local currentVersion = GetPluginInfo(GetPluginID(), 19) or 0
+     local currentVerStr  = string.format("%1.3f", currentVersion)
+     local remoteVerStr   = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+     local remoteVersion  = tonumber(remoteVerStr or "") or 0
+ 
+     if remoteVersion == currentVersion then
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You are running the most recent version. (","cyan","","v" .. currentVerStr .. "","white","",")")
+     elseif (remoteVersion < currentVersion) then
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You have a newer version than is publicly available. (","cyan","","v" .. currentVerStr .. "","white","",")")
+     elseif (update_mode == "check") then
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," You are running ","cyan","","v" .. currentVerStr .. "","white",""," , but there's a newer version ","cyan","","v" .. remoteVerStr)
+     elseif (update_mode == "install") then
+         ColourNote("yellow", "", plugin_prefix .. "","white",""," Updating plugin from version ","cyan","", currentVerStr .. "","white",""," to version ","cyan","", remoteVerStr .."") 
+ 
+         local pluginFile = GetPluginInfo(GetPluginID(), 6)
+         local file = io.open(pluginFile, "wb")
+         file:write(pluginData)
+         file:close()
+         reload_plugin()
+     else
+         ColourNote("red", "", plugin_prefix .. " Invalid update mode: " .. update_mode)
+     end
+ end
+ ----------------------- End Plugin Update Code -----------------------
     ]]>
   </script>
 </muclient>
