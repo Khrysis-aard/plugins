@@ -15,12 +15,33 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.01"
+   version="1.02"
   >
 </plugin>
 
-       <!--  Aliases to turn window on or off  -->
     <aliases>
+	<alias
+      match="^pt remove (.+)$"
+      enabled="y"
+      script="RemoveApprovedPotion"
+      regexp="y"
+    >
+    </alias>
+	<alias
+      match="^pt list$"
+      enabled="y"
+      script="ListApprovedPotions"
+      regexp="y"
+    >
+    </alias>
+	<alias
+      match="^pt add (.+)$"
+      enabled="y"
+      script="AddApprovedPotion"
+      regexp="y"
+      sequence="3"
+    >
+    </alias>
     <alias
       match="^pt help$"
       enabled="y"
@@ -51,6 +72,8 @@
 	 sequence="2"
 	 >
 	</alias>
+	
+	       <!--  Aliases to turn window on or off  -->
 	<alias
      match="^pt hide$"
 	 enabled="y"
@@ -73,7 +96,7 @@
     <!-- Trigger for buying potions -->
     <trigger
       enabled="y"
-      match="You buy (\d+) \* (.+?) from .+ for [\d,]+ gold\."
+      match="^You buy (\d+) \* (.+?) from .+ for [\d,]+ gold\.$"
       script="OnBuyPotion"
       regexp="y"
 	  sequence="1"
@@ -82,14 +105,14 @@
     <!-- Trigger for using potions -->
     <trigger
       enabled="y"
-      match="You quaff (.+)\."
+      match="^You (?:quaff|eat) (.+?)\.$"
       script="OnUsePotion"
       regexp="y"
 	  sequence="3"
     />
 	<trigger
       enabled="y"
-      match="You buy (.+?) from .+ for [\d,]+ gold\."
+      match="^You buy (.+?) from .+ for [\d,]+ gold\.$"
       script="OnBuySinglePotion"
       regexp="y"
 	  sequence="2"
@@ -104,6 +127,7 @@
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, 10, Dina, 10, 1000, 5, true, false)
     
+	approved_potions = approved_potions or {}
 	potion_inventory = potion_inventory or {}
 	
 	  -- Hide the miniwindow
@@ -122,15 +146,53 @@
     end
 
     function OnPluginInstall()
-      local saved = GetVariable("potion_inventory")
-      if saved then
-        potion_inventory = serialize.load(saved) or {}
+      local saved_inventory = GetVariable("potion_inventory")
+      if saved_inventory then
+        potion_inventory = serialize.load(saved_inventory) or {}
       end
-	  show_mw()
-	  refresh_miniwindow()
-	  ShowHelp() -- show help on install
+
+      local saved_approved = GetVariable("approved_potions")
+      if saved_approved then
+        approved_potions = serialize.load(saved_approved) or {}
+      end
+
+      show_mw()
+      refresh_miniwindow()
+      ShowHelp()
     end
+
     
+	function AddApprovedPotion(name, line, wildcards)
+      local potion = normalize_potion_name(wildcards[1])
+      approved_potions[potion] = true
+      SetVariable("approved_potions", serialize.save("approved_potions"))
+      Note("Added '" .. potion .. "' to approved potions list.")
+    end
+	
+	function ListApprovedPotions()
+      Note("Approved Potions List:")
+      local any = false
+      for name in pairs(approved_potions) do
+        Note("  - " .. name)
+         any = true
+      end
+      if not any then
+        Note("  (None)")
+      end
+    end
+
+	function RemoveApprovedPotion(name, line, wildcards)
+      local potion = normalize_potion_name(wildcards[1])
+      if approved_potions[potion] then
+        approved_potions[potion] = nil
+        SetVariable("approved_potions", serialize.save("approved_potions"))
+        Note("Removed '" .. potion .. "' from approved list.")
+      else
+        Note("Potion not in approved list: " .. potion)
+      end
+    end
+
+	
 	function normalize_potion_name(name)
       name = name:gsub("^%s*", "")       -- Trim leading space
       name = name:gsub("%s*$", "")       -- Trim trailing space
@@ -147,6 +209,11 @@
       local raw_name = wildcards[1]
       local potion_name = normalize_potion_name(raw_name)
 
+      if not approved_potions[potion_name] then
+        Note("Ignoring unapproved item: " .. potion_name)
+        return
+      end
+
       potion_inventory[potion_name] = (potion_inventory[potion_name] or 0) + 1
       Note("Bought 1 of " .. potion_name .. ". Total: " .. potion_inventory[potion_name])
       refresh_miniwindow()
@@ -156,7 +223,12 @@
       local amount = tonumber(wildcards[1])
       local raw_name = wildcards[2]
       local potion_name = normalize_potion_name(raw_name)
-
+      
+	  if not approved_potions[potion_name] then
+        Note("Ignoring unapproved item: " .. potion_name)
+        return
+      end
+	  
       potion_inventory[potion_name] = (potion_inventory[potion_name] or 0) + amount
       Note("Bought " .. amount .. " of " .. potion_name .. ". Total: " .. potion_inventory[potion_name])
       refresh_miniwindow()
@@ -165,6 +237,11 @@
     function OnUsePotion(name, line, wildcards)
       local raw_name = wildcards[1]
       local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        Note("Ignoring unapproved item: " .. potion_name)
+        return
+      end
 
       if potion_inventory[potion_name] then
         potion_inventory[potion_name] = potion_inventory[potion_name] - 1
@@ -223,8 +300,11 @@ end
       pt hide      - Hide the miniwindow
       pt reset     - Reset tracked potions
       pt help      - Show this help message
-	  pt update check - Checks for new version
-	  pt upate install - Installs new version
+	  pt add <name>     - Add a potion name to the approved list
+      pt remove <name>  - Remove a potion name from the approved list
+      pt list           - Show approved potion names
+	  pt update check   - Checks for new version
+	  pt upate install  - Installs new version
 
     Potions are tracked automatically when you buy or quaff them.
     The miniwindow color-codes quantities:
@@ -237,11 +317,20 @@ end
 
 
     -- Serialization helpers
-    serialize = {
+    
+	serialize = {
       save = function(name)
         local t = {}
         for k, v in pairs(_G[name]) do
-          t[#t + 1] = string.format("[%q]=%d", k, v)
+          local value_str
+          if type(v) == "number" then
+            value_str = tostring(v)
+          elseif type(v) == "boolean" then
+            value_str = tostring(v)
+          else
+            value_str = string.format("%q", tostring(v))
+          end
+          t[#t + 1] = string.format("[%q]=%s", k, value_str)
         end
         return "return {" .. table.concat(t, ",") .. "}"
       end,
@@ -253,8 +342,8 @@ end
         end
         return {}
       end
-
     }
+
 	
 	 ----------------------- Plugin Update Code -----------------------
  -- Code taken from Durel's dinv plugin, originally via Crowley
