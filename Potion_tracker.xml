@@ -15,11 +15,18 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.02"
+   version="1.03"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^pt set (.+) (\d+)$"
+      enabled="y"
+      regexp="y"
+      script="SetPotionCount"
+    >
+    </alias>
 	<alias
       match="^pt remove (.+)$"
       enabled="y"
@@ -161,7 +168,23 @@
       ShowHelp()
     end
 
-    
+    function SetPotionCount(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local count = tonumber(wildcards[2])
+      local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        Note("Potion '" .. potion_name .. "' is not approved. Use 'pt add " .. potion_name .. "' first.")
+        return
+      end
+
+      potion_inventory[potion_name] = count
+      SetVariable("potion_inventory", serialize.save("potion_inventory"))
+      Note("Set '" .. potion_name .. "' count to " .. count)
+      refresh_miniwindow()
+    end
+
+	
 	function AddApprovedPotion(name, line, wildcards)
       local potion = normalize_potion_name(wildcards[1])
       approved_potions[potion] = true
@@ -300,11 +323,12 @@ end
       pt hide      - Hide the miniwindow
       pt reset     - Reset tracked potions
       pt help      - Show this help message
-	  pt add <name>     - Add a potion name to the approved list
-      pt remove <name>  - Remove a potion name from the approved list
-      pt list           - Show approved potion names
-	  pt update check   - Checks for new version
-	  pt upate install  - Installs new version
+	  pt add <name>         - Add a potion name to the approved list
+      pt set <name> <count> - Set count of an approved potion
+	  pt remove <name>      - Remove a potion name from the approved list
+      pt list               - Show approved potion names
+	  pt update check       - Checks for new version
+	  pt upate install      - Installs new version
 
     Potions are tracked automatically when you buy or quaff them.
     The miniwindow color-codes quantities:
