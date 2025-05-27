@@ -15,11 +15,18 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.041"
+   version="1.05"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^pt font (\d+)$"
+      enabled="y"
+      regexp="y"
+      script="SetFontSize"
+    >
+    </alias>
 	<alias
       match="^pt untracked (on|off)$"
       enabled="y"
@@ -153,7 +160,7 @@
 	
 	require "themed_miniwindows"
 
-    local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, 10, Dina, 10, 1000, 5, true, false)
+    local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, font_size, Dina, font_size, 1000, 5, true, false)
     
 	show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
 	approved_potions = approved_potions or {}
@@ -170,7 +177,33 @@
 		my_window:show()
 	end
 
-    function OnPluginSaveState()
+    function SetFontSize(name, line, wildcards)
+      local new_size = tonumber(wildcards[1])
+      if not new_size or new_size < 6 or new_size > 32 then
+        Note("Please enter a font size between 6 and 32.")
+        return
+      end
+
+      font_size = new_size
+      SetVariable("font_size", tostring(font_size))
+
+      -- Recreate the window with the new font size
+      my_window = ThemedTextWindow(
+        "testpotiontrackerwindow", 200, 200, 200, 200,
+        "Potion Tracker", "center",
+        false, true, true, false, false, false, false,
+        Dina, font_size, Dina, font_size,
+        1000, 5, true, false
+      )
+
+      refresh_miniwindow()
+      Note("Font size set to " .. font_size)
+	  my_window:show()
+    end
+
+
+	
+	function OnPluginSaveState()
       -- Save the inventory when plugin state is saved
       SetVariable("potion_inventory", serialize.save("potion_inventory"))
 	  SetVariable("color_thresholds", serialize.save("color_thresholds"))
@@ -408,9 +441,10 @@ end
       pt update check       - Checks for new version
       pt update install      - Installs new version
       pt untracked on|off   - Show or hide notices for untracked potions
+      pt font <size>             - Set font size for potion window (6-32)
 	  
       pt color reset                 - Reset color thresholds to default values  
-	  pt color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
+      pt color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
         pt color 3 7 12 will make:
                                   Red: 0-3
                                   Magenta: 4-7
