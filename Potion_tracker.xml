@@ -15,11 +15,25 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.05"
+   version="1.06"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^pt kw add (.+) (.+)$"
+      enabled="y"
+      regexp="y"
+      script="SetPotionAlias"
+    >
+	</alias>
+	<alias
+      match="^pt kw remove (.+)$"
+      enabled="y"
+      regexp="y"
+      script="RemovePotionAlias"
+    >
+	</alias>
 	<alias
       match="^pt font (\d+)$"
       enabled="y"
@@ -166,6 +180,7 @@
 	approved_potions = approved_potions or {}
 	potion_inventory = potion_inventory or {}
 	color_thresholds = color_thresholds or { low = 4, medium = 9, high = 14 }
+	potion_aliases = potion_aliases or {}
 	
 	  -- Hide the miniwindow
 	function hide_mw()
@@ -206,12 +221,17 @@
 	function OnPluginSaveState()
       -- Save the inventory when plugin state is saved
       SetVariable("potion_inventory", serialize.save("potion_inventory"))
+	  SetVariable("potion_aliases", serialize.save("potion_aliases"))
 	  SetVariable("color_thresholds", serialize.save("color_thresholds"))
     end
 
     function OnPluginInstall()
       local saved_inventory = GetVariable("potion_inventory")
-      local saved_thresholds = GetVariable("color_thresholds")
+      local saved_aliases = GetVariable("potion_aliases")
+    if saved_aliases then
+      potion_aliases = serialize.load(saved_aliases) or {}
+    end
+	  local saved_thresholds = GetVariable("color_thresholds")
       if saved_thresholds then
         color_thresholds = serialize.load(saved_thresholds) or color_thresholds
     end
@@ -243,7 +263,6 @@
       refresh_miniwindow()
     end
 
-	
 	function SetColorThresholds(name, line, wildcards)
       local low = tonumber(wildcards[1])
       local medium = tonumber(wildcards[2])
@@ -268,7 +287,35 @@
       refresh_miniwindow()
     end
 
-	
+
+	function SetPotionAlias(name, line, wildcards)
+      local full_name = normalize_potion_name(wildcards[1])
+      local alias = wildcards[2]
+
+      if not approved_potions[full_name] then
+        Note("Potion not approved: " .. full_name)
+        return
+      end
+
+      potion_aliases[full_name] = alias
+      SetVariable("potion_aliases", serialize.save("potion_aliases"))
+      Note("Set keyword '" .. alias .. "' for potion '" .. full_name .. "'")
+      refresh_miniwindow()
+    end
+
+    function RemovePotionAlias(name, line, wildcards)
+      local full_name = normalize_potion_name(wildcards[1])
+
+      if potion_aliases[full_name] then
+        potion_aliases[full_name] = nil
+        SetVariable("potion_aliases", serialize.save("potion_aliases"))
+        Note("Removed keyword for potion: " .. full_name)
+        refresh_miniwindow()
+      else
+        Note("No keyword set for: " .. full_name)
+      end
+    end
+
 	function SetPotionCount(name, line, wildcards)
       local raw_name = wildcards[1]
       local count = tonumber(wildcards[2])
@@ -398,34 +445,35 @@
 
 	
 	function refresh_miniwindow()
-  my_window:clear()
-  my_window:add_text("@WPotion Inventory:\n")
+      my_window:clear()
+      my_window:add_text("@WPotion Inventory:\n")
 
-  local any = false
-  for potion, count in pairs(potion_inventory) do
-    local color = "@G"
-    local low = color_thresholds.low
-    local med = color_thresholds.medium
-    local high = color_thresholds.high
+      local any = false
+      for potion, count in pairs(potion_inventory) do
+        local color = "@G"
+        local low = color_thresholds.low
+        local med = color_thresholds.medium
+        local high = color_thresholds.high
+        local display_name = potion_aliases[potion] or potion
 
-    if count <= low then
-      color = "@R"
-    elseif count <= med then
-      color = "@M"
-    elseif count <= high then
-      color = "@Y"
+        if count <= low then
+          color = "@R"
+        elseif count <= med then
+          color = "@M"
+        elseif count <= high then
+          color = "@Y"
+        end
+
+        my_window:add_text(string.format("%s%s: %d\n", color, display_name, count))
+        any = true
+      end
+
+      if not any then
+        my_window:add_text("@WNo potions tracked.\n")
+      end
+
+      my_window:draw()
     end
-
-    my_window:add_text(string.format("%s%s: %d\n", color, potion, count))
-    any = true
-  end
-
-  if not any then
-    my_window:add_text("@WNo potions tracked.\n")
-  end
-
-  my_window:draw()
-end
 
     function ShowHelp()
       local helptext = [[
@@ -439,9 +487,11 @@ end
       pt remove <name>      - Remove a potion name from the approved list
       pt list               - Show approved potion names
       pt update check       - Checks for new version
-      pt update install      - Installs new version
+      pt update install     - Installs new version
       pt untracked on|off   - Show or hide notices for untracked potions
-      pt font <size>             - Set font size for potion window (6-32)
+      pt font <size>        - Set font size for potion window (6-32)
+      pt kw add <full name> <keyword>    - Assign a keyword to a potion
+      pt kw remove <full name>           - Remove an keyword for a potion
 	  
       pt color reset                 - Reset color thresholds to default values  
       pt color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
