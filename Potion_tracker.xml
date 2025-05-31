@@ -14,77 +14,77 @@
    purpose="track potions and countdown remaining"
    save_state="y"
    date_written="2025-05-24 13:46:46"
-   requires="5.07"
+   requires="5.071"
    version="1.06"
   >
 </plugin>
 
     <aliases>
 	<alias
-      match="^pt kw add (.+) (.+)$"
+      match="^ptw kw add (.+) (.+)$"
       enabled="y"
       regexp="y"
       script="SetPotionAlias"
     >
 	</alias>
 	<alias
-      match="^pt kw remove (.+)$"
+      match="^ptw kw remove (.+)$"
       enabled="y"
       regexp="y"
       script="RemovePotionAlias"
     >
 	</alias>
 	<alias
-      match="^pt font (\d+)$"
+      match="^ptw font (\d+)$"
       enabled="y"
       regexp="y"
       script="SetFontSize"
     >
     </alias>
 	<alias
-      match="^pt untracked (on|off)$"
+      match="^ptw untracked (on|off)$"
       enabled="y"
       regexp="y"
       script="ToggleUntrackedMessages"
     >
     </alias>
 	<alias
-      match="^pt color reset$"
+      match="^ptw color reset$"
       enabled="y"
       regexp="y"
       script="ResetColorThresholds"
     >
     </alias>
 	<alias
-      match="^pt color (\d+) (\d+) (\d+)$"
+      match="^ptw color (\d+) (\d+) (\d+)$"
       enabled="y"
       regexp="y"
       script="SetColorThresholds"
     >
     </alias>
 	<alias
-      match="^pt set (.+) (\d+)$"
+      match="^ptw set (.+) (\d+)$"
       enabled="y"
       regexp="y"
       script="SetPotionCount"
     >
     </alias>
 	<alias
-      match="^pt remove (.+)$"
+      match="^ptw remove (.+)$"
       enabled="y"
       script="RemoveApprovedPotion"
       regexp="y"
     >
     </alias>
 	<alias
-      match="^pt list$"
+      match="^ptw list$"
       enabled="y"
       script="ListApprovedPotions"
       regexp="y"
     >
     </alias>
 	<alias
-      match="^pt add (.+)$"
+      match="^ptw add (.+)$"
       enabled="y"
       script="AddApprovedPotion"
       regexp="y"
@@ -92,7 +92,7 @@
     >
     </alias>
     <alias
-      match="^pt help$"
+      match="^ptw help$"
       enabled="y"
       script="ShowHelp"
       regexp="y"
@@ -100,21 +100,21 @@
     >
 	</alias>
 	<alias 
-      match="pt update check" 
+      match="ptw update check" 
       enabled="y" 
       script="update_check_alias" 
       sequence="99"
       >
      </alias>  
      <alias 
-      match="pt update install" 
+      match="ptw update install" 
       enabled="y" 
       script="update_install_alias" 
       sequence="99"
       >
     </alias>
 	<alias 
-	 match="^pt reset$"
+	 match="^ptw reset$"
 	 enabled="y"
 	 script="ResetPotions"
 	 regexp="y"
@@ -124,7 +124,7 @@
 	
 	       <!--  Aliases to turn window on or off  -->
 	<alias
-     match="^pt hide$"
+     match="^ptw hide$"
 	 enabled="y"
 	 regexp="y"
 	 script="hide_mw"
@@ -132,7 +132,7 @@
     >
     </alias>
     <alias
-     match="^pt show$"
+     match="^ptw show$"
 	 enabled="y"
 	 regexp="y"
 	 script="show_mw"
@@ -478,24 +478,24 @@
     function ShowHelp()
       local helptext = [[
     Potion Tracker Plugin - Commands:
-      pt show      - Show the miniwindow
-      pt hide      - Hide the miniwindow
-      pt reset     - Reset tracked potions
-      pt help      - Show this help message
-      pt add <name>         - Add a potion name to the approved list
-      pt set <name> <count> - Set count of an approved potion
-      pt remove <name>      - Remove a potion name from the approved list
-      pt list               - Show approved potion names
-      pt update check       - Checks for new version
-      pt update install     - Installs new version
-      pt untracked on|off   - Show or hide notices for untracked potions
-      pt font <size>        - Set font size for potion window (6-32)
-      pt kw add <full name> <keyword>    - Assign a keyword to a potion
-      pt kw remove <full name>           - Remove an keyword for a potion
+      ptw show      - Show the miniwindow
+      ptw hide      - Hide the miniwindow
+      ptw reset     - Reset tracked potions
+      ptw help      - Show this help message
+      ptw add <name>         - Add a potion name to the approved list
+      ptw set <name> <count> - Set count of an approved potion
+      ptw remove <name>      - Remove a potion name from the approved list
+      ptw list               - Show approved potion names
+      ptw update check       - Checks for new version
+      ptw update install     - Installs new version
+      ptw untracked on|off   - Show or hide notices for untracked potions
+      ptw font <size>        - Set font size for potion window (6-32)
+      ptw kw add <full name> <keyword>    - Assign a keyword to a potion
+      ptw kw remove <full name>           - Remove an keyword for a potion
 	  
-      pt color reset                 - Reset color thresholds to default values  
-      pt color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
-        pt color 3 7 12 will make:
+      ptw color reset                 - Reset color thresholds to default values  
+      ptw color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
+        ptw color 3 7 12 will make:
                                   Red: 0-3
                                   Magenta: 4-7
                                   Yellow: 8-12
