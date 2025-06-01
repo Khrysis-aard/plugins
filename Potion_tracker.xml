@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.061"
+   version="1.07"
   >
 </plugin>
 
@@ -142,15 +142,6 @@
   </aliases>
 	
 	<triggers>
-    <!-- Trigger for buying potions -->
-    <trigger
-      enabled="y"
-      match="^You buy (\d+) \* (.+?) from .+ for [\d,]+ gold\.$"
-      script="OnBuyPotion"
-      regexp="y"
-	  sequence="1"
-    />
-
     <!-- Trigger for using potions -->
     <trigger
       enabled="y"
@@ -159,6 +150,14 @@
       regexp="y"
 	  sequence="3"
     />
+	<!-- Trigger for buying potions -->
+    <trigger
+      enabled="y"
+      match="^You buy (\d+) \* (.+?) from .+ for [\d,]+ gold\.$"
+      script="OnBuyPotion"
+      regexp="y"
+	  sequence="1"
+    />
 	<trigger
       enabled="y"
       match="^You buy (.+?) from .+ for [\d,]+ gold\.$"
@@ -166,7 +165,85 @@
       regexp="y"
 	  sequence="2"
     />
-
+	<!-- Triggers for receive give drop get sell-->
+	<trigger
+      match="^You receive (\d+) \* (.+) from .+\.$"
+      script="OnReceivePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="1"
+    />
+    <trigger
+      match="^You give (\d+) \* (.+) to .+\.$"
+      script="OnGivePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="1"
+    />
+    <trigger
+      match="^You drop (\d+) \* (.+)\.$"
+      script="OnDropPotion"
+      regexp="y"
+      enabled="y"
+	  sequence="1"
+    />
+    <trigger
+      match="^You get (\d+) \* (.+)\.$"
+      script="OnGetPotion"
+      regexp="y"
+      enabled="y"
+	  sequence="1"
+    />
+    <trigger
+      match="^You receive (.+?) from .+\.$"
+      script="OnReceiveSinglePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="2"
+    />
+    <trigger
+      match="^You give (.+?) to .+\.$"
+      script="OnGiveSinglePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="2"
+    />
+    <trigger
+      match="^You drop (.+?)\.$"
+      script="OnDropSinglePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="2"
+    />
+    <trigger
+      match="^You get (.+?)\.$"
+      script="OnGetSinglePotion"
+      regexp="y"
+      enabled="y"
+	  sequence="2"
+    />
+	<trigger
+      enabled="y"
+      match="^You sell (\d+) \* (.+?) to .+ for [\d,]+ gold\.$"
+      script="OnSellPotion"
+      regexp="y"
+      sequence="1"
+    />
+    <trigger
+      enabled="y"
+      match="^You sell (.+?) to .+ for [\d,]+ gold\.$"
+      script="OnSellSinglePotion"
+      regexp="y"
+      sequence="2"
+    />
+		<!-- Triggers for recite scrolls -->
+	<trigger
+      enabled="y"
+      match="^You recite (.+?) on .+\.$"
+      script="OnUsePotion"
+      regexp="y"
+      sequence="4"
+    />
   </triggers>
 
   <script>
@@ -365,15 +442,16 @@
 
 	
 	function normalize_potion_name(name)
-      name = name:gsub("^%s*", "")       -- Trim leading space
+      if not name then return "" end
+	  name = name:gsub("^%s*", "")       -- Trim leading space
       name = name:gsub("%s*$", "")       -- Trim trailing space
-
-      -- Only remove "A " or "An " if followed by a capital letter (simple heuristic)
-      if name:match("^A[n]? %u") then
+      
+	  -- Only remove "A " or "An " if followed by a capital letter (simple heuristic)
+      
+	  if name:match("^A[n]? %u") then
         name = name:gsub("^A[n]? ", "")
       end
-
-      return name
+	  return name
     end
 
     function OnBuySinglePotion(name, line, wildcards)
@@ -409,7 +487,39 @@
       refresh_miniwindow()
     end
 
-    function OnUsePotion(name, line, wildcards)
+    function OnSellPotion(name, line, wildcards)
+      local amount = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        if show_untracked_messages then
+          Note("Sold unapproved potion: " .. potion_name)
+        end
+        return
+      end
+
+      if potion_inventory[potion_name] then
+        potion_inventory[potion_name] = potion_inventory[potion_name] - amount
+        if potion_inventory[potion_name] <= 0 then
+          potion_inventory[potion_name] = nil
+          Note("Sold last of " .. potion_name .. ". Removed from inventory.")
+        else
+          Note("Sold " .. amount .. " of " .. potion_name .. ". Remaining: " .. potion_inventory[potion_name])
+        end
+        refresh_miniwindow()
+      else
+        Note("Sold untracked potion: " .. potion_name)
+      end
+    end
+
+    function OnSellSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnSellPotion(name, line, new_wildcards)
+    end
+
+	function OnUsePotion(name, line, wildcards)
       local raw_name = wildcards[1]
       local potion_name = normalize_potion_name(raw_name)
 
@@ -436,6 +546,118 @@
       refresh_miniwindow()
     end
 	
+	function OnReceivePotion(name, line, wildcards)
+      local count = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion] then
+        if show_untracked_messages then
+          Note("Received unapproved potion: " .. potion)
+        end
+        return
+      end
+
+      potion_inventory[potion] = (potion_inventory[potion] or 0) + count
+      Note("Received " .. count .. " of " .. potion .. ". Total: " .. potion_inventory[potion])
+      refresh_miniwindow()
+    end
+
+    function OnGivePotion(name, line, wildcards)
+      local count = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion] then
+        if show_untracked_messages then
+          Note("Gave unapproved potion: " .. potion)
+        end
+        return
+      end
+
+      if potion_inventory[potion] then
+        potion_inventory[potion] = potion_inventory[potion] - count
+        if potion_inventory[potion] <= 0 then
+          potion_inventory[potion] = nil
+          Note("Gave away last of " .. potion .. ". Removed from inventory.")
+        else
+          Note("Gave away " .. count .. " of " .. potion .. ". Remaining: " .. potion_inventory[potion])
+        end
+        refresh_miniwindow()
+      else
+        Note("Tried to give untracked potion: " .. potion)
+      end
+    end
+
+    function OnDropPotion(name, line, wildcards)
+      local amount = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        if show_untracked_messages then
+          Note("Ignoring unapproved item: " .. potion_name)
+        end
+        return
+      end
+
+      if potion_inventory[potion_name] then
+        potion_inventory[potion_name] = potion_inventory[potion_name] - amount
+
+        if potion_inventory[potion_name] <= 0 then
+          potion_inventory[potion_name] = nil
+          Note("Dropped last of " .. potion_name .. ". Removed from inventory.")
+        else
+          Note("Dropped " .. amount .. " of " .. potion_name .. ". Remaining: " .. potion_inventory[potion_name])
+        end
+      else
+        Note("Dropped untracked potion: " .. potion_name)
+      end
+
+      refresh_miniwindow()
+    end
+
+    function OnGetPotion(name, line, wildcards)
+      local amount = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        if show_untracked_messages then
+          Note("Ignoring unapproved item: " .. potion_name)
+        end
+        return
+      end
+
+      potion_inventory[potion_name] = (potion_inventory[potion_name] or 0) + amount
+      Note("Picked up " .. amount .. " of " .. potion_name .. ". Total: " .. potion_inventory[potion_name])
+      refresh_miniwindow()
+    end
+	
+    function OnReceiveSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnReceivePotion(name, line, new_wildcards)
+    end
+
+    function OnGiveSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnGivePotion(name, line, new_wildcards)
+    end
+
+    function OnDropSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnDropPotion(name, line, new_wildcards)
+    end
+
+    function OnGetSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnGetPotion(name, line, new_wildcards)
+    end
+
 	function ResetPotions()
       potion_inventory = {}
       SetVariable("potion_inventory", serialize.save("potion_inventory"))
