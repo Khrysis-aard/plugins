@@ -14,8 +14,8 @@
    purpose="track potions and countdown remaining"
    save_state="y"
    date_written="2025-05-24 13:46:46"
-   requires="5.071"
-   version="1.06"
+   requires="5.07"
+   version="1.061"
   >
 </plugin>
 
@@ -446,7 +446,6 @@
 	
 	function refresh_miniwindow()
       my_window:clear()
-      my_window:add_text("@WPotion Inventory:\n")
 
       local any = false
       for potion, count in pairs(potion_inventory) do
