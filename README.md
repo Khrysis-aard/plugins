@@ -8,7 +8,9 @@ ft2_portal plugin - has riddles built in so no need for both plugins but Thief c
 
 Practice_all_or_list - Practice all or practice just things from lists you make. Keep up with only what you want to practice.
 
+Potion_tracker - Keeps track of potions types and how many remaining in a miniwindow. Works with scrolls and foods also.
+
 wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)
 
-Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, Ft2_portal
+Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, Ft2_portal, Potion_tracker
 
