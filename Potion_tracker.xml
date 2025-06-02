@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.07"
+   version="1.071"
   >
 </plugin>
 
@@ -303,16 +303,25 @@
     end
 
     function OnPluginInstall()
+      local saved_font_size = GetVariable("font_size")
+      if saved_font_size then
+        font_size = tonumber(saved_font_size)
+      else
+        font_size = 10 -- Default if none is saved
+      end
+
       local saved_inventory = GetVariable("potion_inventory")
       local saved_aliases = GetVariable("potion_aliases")
-    if saved_aliases then
-      potion_aliases = serialize.load(saved_aliases) or {}
-    end
-	  local saved_thresholds = GetVariable("color_thresholds")
+      if saved_aliases then
+        potion_aliases = serialize.load(saved_aliases) or {}
+      end
+
+      local saved_thresholds = GetVariable("color_thresholds")
       if saved_thresholds then
         color_thresholds = serialize.load(saved_thresholds) or color_thresholds
-    end
-	  if saved_inventory then
+      end
+
+      if saved_inventory then
         potion_inventory = serialize.load(saved_inventory) or {}
       end
 
@@ -321,10 +330,20 @@
         approved_potions = serialize.load(saved_approved) or {}
       end
 
+      -- Recreate the window with correct font size
+      my_window = ThemedTextWindow(
+        "testpotiontrackerwindow", 200, 200, 200, 200,
+        "Potion Tracker", "center",
+        false, true, true, false, false, false, false,
+        Dina, font_size, Dina, font_size,
+        1000, 5, true, false
+      )
+
       show_mw()
       refresh_miniwindow()
       ShowHelp()
     end
+
 
     function ToggleUntrackedMessages(name, line, wildcards)
       local mode = wildcards[1]
