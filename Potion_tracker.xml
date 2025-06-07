@@ -15,11 +15,18 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.072"
+   version="1.073"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^ptw kw list$"
+      enabled="y"
+      regexp="y"
+      script="ListPotionKeywords"
+    >
+    </alias>
 	<alias
       match="^ptw kw add (.+) (.+)$"
       enabled="y"
@@ -376,6 +383,19 @@
       refresh_miniwindow()
     end
 
+    -- Keyword functions
+	
+	function ListPotionKeywords()
+      Note("Potion Keywords:")
+      local any = false
+      for potion, keyword in pairs(potion_aliases) do
+        Note(string.format("  - %s => %s", potion, keyword))
+        any = true
+      end
+      if not any then
+        Note("  (No keywords assigned)")
+      end
+    end
 
 	function SetPotionAlias(name, line, wildcards)
       local full_name = normalize_potion_name(wildcards[1])
@@ -725,9 +745,9 @@
       ptw font <size>        - Set font size for potion window (6-32)
       ptw kw add <full name> <keyword>    - Assign a keyword to a potion
       ptw kw remove <full name>           - Remove an keyword for a potion
-	  
-      ptw color reset                 - Reset color thresholds to default values  
-      ptw color <low> <medium> <high> - Set custom color thresholds for inventory (must be increasing)
+      ptw kw list                         - Show all keyword assignments
+      ptw color reset                     - Reset color thresholds to default values  
+      ptw color <low> <medium> <high>     - Set custom color thresholds for inventory (must be increasing)
         ptw color 3 7 12 will make:
                                   Red: 0-3
                                   Magenta: 4-7
