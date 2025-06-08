@@ -15,11 +15,18 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.073"
+   version="1.074"
   >
 </plugin>
 
     <aliases>
+	<alias
+      match="^ptw order$"
+      enabled="y"
+      regexp="y"
+      script="ToggleDisplayOrder"
+    >
+    </alias>
 	<alias
       match="^ptw kw list$"
       enabled="y"
@@ -310,6 +317,7 @@
       SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
       SetVariable("font_size", tostring(font_size))
       SetVariable("show_untracked_messages", tostring(show_untracked_messages))
+	  SetVariable("order_name_first", tostring(order_name_first))
     end
 
 
@@ -329,6 +337,7 @@
       end
 
       show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
+	  order_name_first = GetVariable("order_name_first") ~= "false"
 
       my_window = ThemedTextWindow(
         "testpotiontrackerwindow", 200, 200, 200, 200,
@@ -343,7 +352,12 @@
       ShowHelp()
     end
 
-
+    function ToggleDisplayOrder()
+      order_name_first = not order_name_first
+      SetVariable("order_name_first", tostring(order_name_first))
+      Note("Display order is now: " .. (order_name_first and "Potion Name First" or "Count First"))
+      refresh_miniwindow()
+    end
 
     function ToggleUntrackedMessages(name, line, wildcards)
       local mode = wildcards[1]
@@ -716,8 +730,14 @@
         elseif count <= high then
           color = "@Y"
         end
-
-        my_window:add_text(string.format("%s%s: %d\n", color, display_name, count))
+		
+        local line_text
+    if order_name_first then
+      line_text = string.format("%s%s: %d\n", color, display_name, count)
+    else
+      line_text = string.format("%s%d: %s\n", color, count, display_name)
+    end
+    my_window:add_text(line_text)
         any = true
       end
 
@@ -742,6 +762,7 @@
       ptw update check       - Checks for new version
       ptw update install     - Installs new version
       ptw untracked on|off   - Show or hide notices for untracked potions
+      ptw order              - Toggle between "Name: Count" and "Count: Name" view
       ptw font <size>        - Set font size for potion window (6-32)
       ptw kw add <full name> <keyword>    - Assign a keyword to a potion
       ptw kw remove <full name>           - Remove an keyword for a potion
