@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.1"
+   version="1.2"
   >
 </plugin>
 
@@ -925,3 +925,4 @@ json = require("json")
     ]]>
   </script>
 </muclient>
+
