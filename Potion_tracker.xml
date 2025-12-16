@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.074"
+   version="1.1"
   >
 </plugin>
 
@@ -164,6 +164,21 @@
       regexp="y"
 	  sequence="3"
     />
+	<!-- Trigger for stealing potions -->
+	<trigger
+      enabled="y"
+      match="^You steal (\d+) \* (.+?) away from .+, saving [\d,]+ gold\.$"
+      script="OnStealPotion"
+      regexp="y"
+      sequence="1"
+    />
+    <trigger
+      enabled="y"
+      match="^You steal (.+?) away from .+, saving [\d,]+ gold\.$"
+      script="OnStealSinglePotion"
+      regexp="y"
+      sequence="2"
+    />
 	<!-- Trigger for buying potions -->
     <trigger
       enabled="y"
@@ -230,7 +245,7 @@
 	  sequence="2"
     />
     <trigger
-      match="^You get (.+?)\.$"
+      match="^You get (?![\d,]+ gold coins)(.+?)\.$"
       script="OnGetSinglePotion"
       regexp="y"
       enabled="y"
@@ -500,7 +515,32 @@
 	  return name
     end
 
-    function OnBuySinglePotion(name, line, wildcards)
+    -- Stealing potion functions
+
+    function OnStealPotion(name, line, wildcards)
+      local amount = tonumber(wildcards[1])
+      local raw_name = wildcards[2]
+      local potion_name = normalize_potion_name(raw_name)
+
+      if not approved_potions[potion_name] then
+        if show_untracked_messages then
+          Note("Stole unapproved item: " .. potion_name)
+        end
+        return
+      end
+
+      potion_inventory[potion_name] = (potion_inventory[potion_name] or 0) + amount
+      Note("Stole " .. amount .. " of " .. potion_name .. ". Total: " .. potion_inventory[potion_name])
+      refresh_miniwindow()
+    end
+
+    function OnStealSinglePotion(name, line, wildcards)
+      local raw_name = wildcards[1]
+      local new_wildcards = { "1", raw_name }
+      OnStealPotion(name, line, new_wildcards)
+    end
+	
+	function OnBuySinglePotion(name, line, wildcards)
       local raw_name = wildcards[1]
       local potion_name = normalize_potion_name(raw_name)
 
