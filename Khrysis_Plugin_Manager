@@ -19,7 +19,7 @@
 kpm help   : shows this help
 kpm check  : quick checks for updates on plugins prints links for updates
 kpm list   : shows dashboard of plugin status with clickable Install/Remove/Update links
-kpm update : updates this plugin and does kpm list
+kpm update : checks for and updates this plugin
 ]]>
 </description>
 </plugin>
