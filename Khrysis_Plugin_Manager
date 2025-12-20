@@ -161,7 +161,7 @@ function update_manager()
     end
 
     -- Versions
-    local remoteVerStr = string.match(data, '%s%s+version="([0-9%.]+)"')
+    local remoteVerStr = string.match(data, 'version="([0-9%.]+)"')
     local remoteVer    = tonumber(remoteVerStr) or 0
     local currentVer   = GetPluginInfo(managerPlugin.id, 19) or 0
 
@@ -201,8 +201,11 @@ function update_manager()
     ColourNote("green", "", plugin_prefix .. " Plugin Manager updated. Reloading...")
 
     -- Reload self safely
-    Execute("\\\\\\DoAfterSpecial(0.2, \"ReloadPlugin('" ..
-        managerPlugin.id .. "')\", sendto.script)")
+    Execute("\\\\\\DoAfterSpecial(0.2, \"ReloadPlugin('" .. managerPlugin.id .. "')\", sendto.script)")
+
+    -- Run dashboard after short delay
+    Execute("\\\\\\DoAfterSpecial(0.5, \"Execute('kpm list')\", sendto.script)")
+
 end
 
 --------------------------------------------------
