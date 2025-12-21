@@ -131,7 +131,7 @@ local pluginList = {
 local managerPlugin = {
     name = "Khrysis_Plugin_Manager",
     id = world.GetPluginID(),
-    url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Khrysis_Plugin_Manager"
+    url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Khrysis_Plugin_Manager.xml"
 }
 
 -- Async wrapper
