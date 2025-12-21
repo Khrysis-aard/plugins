@@ -1,5 +1,7 @@
 # plugins
 
+Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps check on the status of plugins if they need updates etc.
+
 Aoe_Atk_Manager -  Automatically update aoe, atk, or skill variables based on the list you create and usable through built in aliases in plugin. The aoe, atk, or skill variables will be automatically updated through remorts or tiers based on the list. The plugin now handles skills and setting shortsyntax words for using skills that have names like Kobold spray but uses kspray to work. This lets you have it set to be autoupdated but still use the right syntax to use the skill with aam skill or aam skill target.
 
 CycleCastSpells - Allows you to create lists of spells to cast from using simple commands. Make as many dif types of list and define your own command to cast through it.
