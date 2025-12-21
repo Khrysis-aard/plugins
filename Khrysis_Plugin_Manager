@@ -516,7 +516,7 @@ function show_dashboard()
                 end
                 local _, data, code = t:join()
                 if code == 200 and data then
-                    remoteVerStr = string.match(data, 'version="([0-9%.]+)"') or "-"
+                    remoteVerStr = string.match(data, '%s%s+version="([0-9%.]+)"')
                     remoteVer = tonumber(remoteVerStr) or 0
                 end
             end
