@@ -13,7 +13,7 @@
    save_state="y"
    date_written="2024-12-15 23:12:46"
    requires="5.07"
-   version="1.1"
+   version="1.2"
    >
    <description trim="y">
 <![CDATA[
@@ -311,7 +311,6 @@ end
 
 function OnHelp ()
   local p = "CycleCastSpells"
-  -- This pulls the version number directly from the <plugin version="..."> tag
   local version = string.format("%1.2f", GetPluginInfo(GetPluginID(), 19) or 0)
   local line = "==============================================================================="
   
@@ -344,7 +343,7 @@ function OnHelp ()
   ColourNote("silver", "", " * ") 
   ColourNote("yellow", "", "Complex Rotations: ") 
   Note("Add multiple spells to one letter for easy spamming.")
-  Note("   cc add 'magic missile' 1; cc add 'ice bolt' 1; cc add 'shock' 1")
+  Note("   cc add magic missile 1; cc add ice bolt 1; cc add shock 1")
   Note("   Now just spam 'cc 1' to rotate through three different elements.")
   
   -- Example 2
@@ -354,8 +353,9 @@ function OnHelp ()
   
   -- Example 3
   ColourNote("silver", "", " * ") 
-  ColourNote("yellow", "", "Quotes: ") 
-  Note("If a spell has two words, use quotes: cc add 'fire ball' f")
+  ColourNote("yellow", "", "Multi-word Spells: ") 
+  Note("Do NOT use quotes. The plugin handles spaces automatically.")
+  Note("Example: cc add acid wave f")
   
   ColourNote("orange", "", line)
 end
