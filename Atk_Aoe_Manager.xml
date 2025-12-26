@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.30"
+   version="1.4"
    >
 <description trim="y">
 <![CDATA[
@@ -314,69 +314,15 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- List Primary Attack Spells, AoE Spells, Skills or All -->
   <alias
-   match="aam list (all|patk|aoe|skill|shortsyntax)"
-   enabled="y"
-   group="attack"
-   send_to="12"
-   sequence="100"
-   expand_variables="y"
-   regexp="y"
-  >
-    <send>
-      local listType = "%1"
-      
-      if listType == "patk" then
-        if #Patk == 0 then
-          Note("No primary attack spells available.")
-        else
-          Note("Primary Attack Spells: " .. table.concat(Patk, ", "))
-        end
-      elseif listType == "aoe" then
-        if #Aoe == 0 then
-          Note("No AoE spells available.")
-        else
-          Note("AoE Spells: " .. table.concat(Aoe, ", "))
-        end
-      elseif listType == "skill" then
-        if #Skills == 0 then
-          Note("No skills available.")
-        else
-          Note("Skills: " .. table.concat(Skills, ", "))
-        end
-	  elseif listType == "shortsyntax" then
-      if next(SkillShortSyntax) == nil then  -- Check if table is empty
-        Note("No short syntax defined for any skills.")
-      else
-        Note("Short syntax you have:")
-        for skill, syntax in pairs(SkillShortSyntax) do
-          Note(skill .. " -> " .. syntax)
-        end
-      end
-      else
-        -- For "all", show Patk, Aoe, and Skills
-        if #Patk == 0 and #Aoe == 0 and #Skills == 0 then
-          Note("No spells or skills available.")
-        else
-          if #Patk > 0 then
-            Note("Primary Attack Spells: " .. table.concat(Patk, ", "))
-          else
-            Note("No primary attack spells available.")
-          end
-          if #Aoe > 0 then
-            Note("AoE Spells: " .. table.concat(Aoe, ", "))
-          else
-            Note("No AoE spells available.")
-          end
-          if #Skills > 0 then
-            Note("Skills: " .. table.concat(Skills, ", "))
-          else
-            Note("No skills available.")
-          end
-        end
-      end
-    </send>
+  match="aam list (all|patk|aoe|skill|shortsyntax)"
+  enabled="y"
+  group="attack"
+  send_to="12"
+  sequence="100"
+  regexp="y"
+>
+  <send>ShowList("%1")</send>
   </alias>
-
 
   <!-- Show Help -->
   <alias
@@ -690,6 +636,15 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
   </send>
 </alias>
 
+<alias
+ match="aam status"
+ enabled="y"
+ group="attack"
+ send_to="12"
+ sequence="100"
+>
+ <send>ShowStatus()</send>
+</alias>
 
 </aliases>
 
@@ -715,42 +670,166 @@ function table.contains(tbl, val)
   return false
 end
 
+-- aam new list function
+function ShowList(listType)
+    local header_col = "cyan"
+    local item_col = "white"
+    local border_col = "mediumblue"
+    local arrow_col = "yellow"
+    local cmd_col = "lime"
+
+    -- Table to help title the box
+    local titles = {
+        patk = "Primary Attack Spells",
+        aoe  = "AoE Spells",
+        skill = "Available Skills",
+        shortsyntax = "Short Syntax Mappings"
+    }
+
+    -- Helper to draw the box header
+    local function DrawHeader(title)
+        Note("")
+        ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+        ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", title), border_col, "", " |")
+        ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    end
+
+    -- Helper to draw a single row in the grid
+    local function DrawRow(col1, col2)
+        col1 = col1 or ""
+        col2 = col2 or ""
+        -- Two columns of 30 chars each, plus spacing = 63 internal width
+        local line = string.format(" %-30s %-31s", col1, col2)
+        ColourNote(border_col, "", "|", item_col, "", line, border_col, "", "|")
+    end
+
+    -- Handle specific lists
+    if listType == "shortsyntax" then
+        DrawHeader(titles.shortsyntax)
+        local count = 0
+        for skill, syntax in pairs(SkillShortSyntax) do
+            count = count + 1
+            local label = string.format(" %s ", skill)
+            local mapping = string.format(" -> %s", syntax)
+            local padding = string.rep(" ", 63 - string.len(label) - string.len(mapping))
+            ColourNote(border_col, "", "|", item_col, "", label, arrow_col, "", "-> ", cmd_col, "", syntax .. padding, border_col, "", "|")
+        end
+        if count == 0 then DrawRow(" (No mappings defined)", "") end
+    else
+        -- Handle Spell/Skill Lists (Patk, Aoe, or Skills)
+        local targetTable = {}
+        if listType == "patk" then targetTable = Patk
+        elseif listType == "aoe" then targetTable = Aoe
+        elseif listType == "skill" then targetTable = Skills
+        elseif listType == "all" then 
+            -- If 'all', recursively call for each and exit
+            ShowList("patk")
+            ShowList("aoe")
+            ShowList("skill")
+            ShowList("shortsyntax")
+            return 
+        end
+
+        DrawHeader(titles[listType] or "List")
+        if #targetTable == 0 then
+            DrawRow(" (List is empty)", "")
+        else
+            for i = 1, #targetTable, 2 do
+                DrawRow(targetTable[i], targetTable[i+1])
+            end
+        end
+    end
+
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    Note("")
+end
+
+-- aam status command stuff
+function ShowStatus()
+    local header_col = "cyan"
+    local label_col = "white"
+    local val_col = "lime"
+    local count_col = "yellow"
+    local border_col = "mediumblue"
+
+    -- Get values
+    local currentAtk = GetVariable("atkspell") or "None"
+    local currentAoe = GetVariable("aoespell") or "None"
+    local currentSkill = GetVariable("skill") or "None"
+    local atkCount = tostring(#Patk or 0)
+    local aoeCount = tostring(#Aoe or 0)
+    local skillCount = tostring(#Skills or 0)
+    local shortCount = 0
+    for _ in pairs(SkillShortSyntax) do shortCount = shortCount + 1 end
+    shortCount = tostring(shortCount)
+
+    -- Formatting helper to ensure exact 63-character internal width
+    local function PrintStatusLine(label, value, value_color)
+        local total_width = 63
+        local label_len = string.len(label)
+        local padding_len = total_width - label_len - string.len(value)
+        
+        -- Create the exact number of spaces needed
+        local padding = string.rep(" ", padding_len)
+        
+        ColourNote(border_col, "", "| ", label_col, "", label, value_color, "", value .. padding, border_col, "", " |")
+    end
+
+    Note("")
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Atk_Aoe_Manager Status"), border_col, "", " |")
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    
+    PrintStatusLine("Active Atk: ", currentAtk, val_col)
+    PrintStatusLine("Active AoE: ", currentAoe, val_col)
+    PrintStatusLine("Active Skl: ", currentSkill, val_col)
+    
+    ColourNote(border_col, "", "|                                                                 |")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "List Statistics:"), border_col, "", " |")
+    
+    PrintStatusLine("Spells in Atk List   : ", atkCount, count_col)
+    PrintStatusLine("Spells in AoE List   : ", aoeCount, count_col)
+    PrintStatusLine("Skills in List       : ", skillCount, count_col)
+    PrintStatusLine("Short Syntax Mappings: ", shortCount, count_col)
+    
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    Note("")
+end
+
 -- Help function to explain how the plugin works
 function OnHelp()
-  Note("")
-  Note("Keeps your Aoe, Atk or Skill variables updated automatically based on what is added to the lists for each.")
-  Note("They will be set to the variables automatically as you level or when u remort and practice the first time.")
-  Note("As long as its practiced to 85% or 95% it will be updated for aoe, atk, or skill based on your lists.")
-  Note("")
-  Note("aam add patk/aoe/skill [spell or skill] - Add a primary attack, skill, or aoe spell to the list.")
-  Note("")
-  Note("aam rem patk/aoe/skill [spell or skill] - Remove a primary attack, skill, or aoe spell from the list.")
-  Note("")
-  Note("aam list patk/aoe/skill/shortsyntax/all - List spells from patk, aoe, skill, shortsyntax, or all.")
-  Note("")
-  Note("aam clear patk/aoe/skill/shortsyntax/all - Clear list from patk, aoe, skill, shortsyntax, or all.")
-  Note("")
-  Note("aam set atk/aoe/skill [spell or skill] - Set the atk, skill, or aoe spell.")
-  Note("")
-  Note("aam atk - Casts the spell set for atk.")
-  Note("")
-  Note("aam atk [mobname] - Casts the spell set for atk at the target input.")
-  Note("")
-  Note("aam skill - Uses current set skill.")
-  Note("")
-  Note("aam skill [mobname] - Uses current set skill on target.")
-  Note("")
-  Note("aam setskill [skillname] to [shortsyntax] - Sets the shortsyntax to use when using the skill")
-  Note("                                           Example: aam setskill Cobra Bane to cobra or aam setskill cobra bane to cobra")
-  Note("")
-  Note("aam showskill [skillname] - Will show the shortsyntax set for the given skill.")
-  Note("")
-  Note("aam aoe - Casts the spell set for aoe.")
-  Note("")
-  Note("aam update check - Checks for a update.")
-  Note("")
-  Note("aam update install - Installs the update.")
-  Note("")
+    local header_col = "cyan"
+    local command_col = "yellow"
+    local desc_col = "white"
+    local border_col = "mediumblue"
+
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Atk_Aoe_Manager Help"), border_col, "", " |")
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    
+    local function HelpLine(cmd, desc)
+        ColourNote(command_col, "", string.format(" %-33s ", cmd), desc_col, "", "- " .. desc)
+    end
+
+    Note("")
+    HelpLine("aam status", "View active spells and list counts.")
+    HelpLine("aam list <all|patk|aoe|shortsyntax>", "See full contents of your lists.")
+    Note("")
+    ColourNote(header_col, "", "--- Management ---")
+    HelpLine("aam add <patk|aoe|skill> <name>", "Add item to watch list.")
+    HelpLine("aam rem <patk|aoe|skill> <name>", "Remove item from list.")
+    HelpLine("aam clear <all|patk|aoe|skill>", "Wipe a list clean.")
+    Note("")
+    ColourNote(header_col, "", "--- Manual Control ---")
+    HelpLine("aam set <atk|aoe|skill> <name>", "Force a specific spell/skill.")
+    HelpLine("aam setskill <name> to <shortsyntax>", "Map long name to short command.")
+    Note("")
+    ColourNote(header_col, "", "--- Combat ---")
+    HelpLine("aam atk [target]", "Cast attack spell.")
+    HelpLine("aam skill [target]", "Use current skill.")
+    HelpLine("aam aoe", "Cast AoE spell.")
+    Note("")
+    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
 end
 
 -- Save the stored tables and reload them on new session
