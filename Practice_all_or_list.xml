@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.03"
+   version="1.1"
    >
 
 </plugin>
@@ -407,8 +407,8 @@ end
 
 function cprac_start (name, line, wildcards)
   local cmd = wildcards.cmd
-  if cmd ~= "custom" and cmd ~= "list" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" and cmd ~= "all" and cmd ~= "spellup" and cmd ~= "clear spellup" and cmd ~= "slist" then
-    Note("Invalid cprac command - try: cprac <custom|tier|spellup|list|tlist|slist|help>")
+  if cmd ~= "custom" and cmd ~= "clist" and cmd ~= "help" and cmd ~= "tier" and cmd ~= "tlist" and cmd ~= "clear custom" and cmd ~= "clear tier" and cmd ~= "all" and cmd ~= "spellup" and cmd ~= "clear spellup" and cmd ~= "slist" then
+    Note("Invalid cprac command - try: cprac <custom|tier|spellup|clist|tlist|slist|help>")
     return
   end -- if
   if cmd == "help" then
@@ -460,7 +460,7 @@ function cprac_start (name, line, wildcards)
     tskills_count = 0
     ColourNote("yellow","","<--- tier list is clear --->")
   end -- if
-  if cmd == "list" then
+  if cmd == "clist" then
   do_practice = 0
   cprac_custom ()
   end -- if
@@ -521,53 +521,68 @@ function tier_list (name, line, wildcards)
 end -- tier_list
 
 function cprac_custom ()
-  if do_practice == 0 then
-    for k,v in pairs(cskills_found) do
-    print(k)
- end -- if
-    ColourNote("cyan","","" .. cskills_count .. " skill/s or spell/s in clist")
-    ColourNote("cyan","","To add/remove type custom skill/spellname")
-  end -- for
-   if (do_practice == 3) then
+  -- Display Custom List (do_practice == 0) or Tier List (do_practice == 4)
+  if do_practice == 0 or do_practice == 4 then
+    local list_to_show = (do_practice == 0) and cskills_found or tskills_found
+    local title = (do_practice == 0) and "CUSTOM LIST" or "TIER LIST"
+    local cmd_hint = (do_practice == 0) and "custom" or "tier"
+    local count = 0
+
+    Note("")
+    ColourNote("orange", "", "--- " .. title .. " ---")
+    
+    for k, v in pairs(list_to_show) do
+      count = count + 1
+      -- column width of 20 characters
+      local padded_name = string.format("%-20s", k:sub(1, 19))
+      ColourTell("yellow", "", "• ", "cyan", "", padded_name)
+      
+      -- Every 4 items, start a new line
+      if count % 4 == 0 then
+        Note("") 
+      end
+    end
+    
+    if count % 4 ~= 0 then Note("") end 
+    ColourNote("orange", "", string.rep("-", 50))
+    ColourNote("cyan", "", "Total: " .. count .. " items found.")
+    ColourNote("silver", "", "To add/remove: type '" .. cmd_hint .. " <name>'")
+    Note("")
+    return
+  end
+
+  -- PRACTICING LOGIC (The actual commands sent to MUD)
+  if (do_practice == 3) then -- cprac custom
     for k,v in pairs(skills_found) do
       if cskills_found[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
-      elseif spellup[v.skillname] then
+      elseif spellup[v.skillname] and togspell == 1 then
         SendNoEcho("prac " .. v.skillname .. " full")
-       end -- if
-     end -- for
-   SendNoEcho("echo @C...@cFinished Practicing@C...")
-   end -- if
-  if (do_practice == 4) then
-    for k,v in pairs(tskills_found) do
-    print(k)
-  end -- if
-    ColourNote("cyan","","" .. tskills_count .. " skill/s or spell/s in tlist")
-    ColourNote("cyan","","To add/remove from type tier skill/spellname")
-   end -- for
-    if (do_practice == 5) then
-     for k,v in pairs(skills_found) do
+      end
+    end
+    SendNoEcho("echo @C...@cFinished Practicing@C...")
+  end
+
+  if (do_practice == 5) then -- cprac tier
+    for k,v in pairs(skills_found) do
       if tskills_found[v.skillname] then
         SendNoEcho("prac " .. v.skillname .. " full")
-      elseif spellup[v.skillname] then
+      elseif spellup[v.skillname] and togspell == 1 then
         SendNoEcho("prac " .. v.skillname .. " full")
-       end -- if
-     end -- for
-   SendNoEcho("echo @C...@cFinished Practicing@C...")
-   end -- if
-  if (do_practice == 2) then
-     for k,v in pairs(skills_found) do
-      if cskills_found[v.skillname] then
+      end
+    end
+    SendNoEcho("echo @C...@cFinished Practicing@C...")
+  end
+
+  if (do_practice == 2) then -- cprac all
+    for k,v in pairs(skills_found) do
+      if cskills_found[v.skillname] or tskills_found[v.skillname] or (spellup[v.skillname] and togspell == 1) then
         SendNoEcho("prac " .. v.skillname .. " full")
-      elseif tskills_found[v.skillname] then
-        SendNoEcho("prac " .. v.skillname .. " full")
-      elseif spellup[v.skillname] then
-        SendNoEcho("prac " .. v.skillname .. " full")
-      end -- if
-    end -- for
-   SendNoEcho("echo @C...@cFinished Practicing@C...")
-  end -- if
-end -- cprac_custom
+      end
+    end
+    SendNoEcho("echo @C...@cFinished Practicing@C...")
+  end
+end
 
 ---cprac custom stuff---
 
@@ -687,11 +702,29 @@ function add_spellup (name, wildcards)
 end -- add_spellup
 
 function spellup_list ()
-  for k,v in pairs(spellup) do
- print (k)
-  end -- for
- ColourNote ("cyan","","" .. spell_count .. " spells/skills found")
- ColourNote ("cyan","","To refresh manually type cprac spellup to disable then again to enable and refresh")
+  local count = 0
+  Note("")
+  ColourNote("orange", "", "--- SPELLUP/CURATIVE LIST (Auto-Added) ---")
+  
+  for k, v in pairs(spellup) do
+    count = count + 1
+    -- column width of 20 characters
+    local padded_name = string.format("%-20s", k:sub(1, 19))
+    ColourTell("yellow", "", "• ", "cyan", "", padded_name)
+    
+    -- Every 4 items, start a new line
+    if count % 4 == 0 then
+      Note("")
+    end
+  end
+  
+  -- If we didn't end exactly on a multiple of 4, add a final newline
+  if count % 4 ~= 0 then Note("") end
+  
+  ColourNote("orange", "", string.rep("-", 50))
+  ColourNote("cyan", "", "Total: " .. count .. " items found.")
+  ColourNote("silver", "", "Toggled via 'cprac spellup'. Refreshes on toggle/tier/login/.")
+  Note("")
 end -- spellup_list
 
 function spellup_end ()
@@ -758,15 +791,15 @@ function OnHelp ()
   ColourNote("blue","","|                                                                                                         |")
   ColourNote("blue","","|","cyan",""," dprac list :","yellow",""," List All available skills to be practiced                                                  ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
-  ColourNote("blue","","|","cyan",""," cprac custom :","yellow",""," Practices matches from cprac list of skills/spells and spellup if enabled                ","blue","","|")
+  ColourNote("blue","","|","cyan",""," cprac custom :","yellow",""," Practices matches from cprac clist of skills/spells and spellup if enabled               ","blue","","|")
   ColourNote("blue","","|","yellow","","                This list is meant for whatever you want really heals, pets, attack spells etc..         ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
   ColourNote("blue","","|","cyan",""," cprac tier :","yellow",""," Practices matches from cprac tlist of skills/spells and spellup if enabled                 ","blue","","|")
   ColourNote("blue","","|","yellow","","              This list is meant for what you want to practice when you hit a new tier and are R1        ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
-  ColourNote("blue","","|","cyan",""," cprac all :","yellow",""," Practices matches from both cprac list/tlist and spellup if enabled                         ","blue","","|")
+  ColourNote("blue","","|","cyan",""," cprac all :","yellow",""," Practices matches from both cprac clist/tlist and spellup if enabled                        ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
-  ColourNote("blue","","|","cyan",""," cprac list/tlist/slist :","yellow",""," List custom/tier/spellup lists with total on list                              ","blue","","|")
+  ColourNote("blue","","|","cyan",""," cprac clist/tlist/slist :","yellow",""," List custom-list/tier-tlist/spellup-slist with total on list                  ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
   ColourNote("blue","","|","cyan",""," cprac clear custom/tier/spellup :","yellow",""," Clears the list custom/tier/spellup                                   ","blue","","|")
   ColourNote("blue","","|                                                                                                         |")
