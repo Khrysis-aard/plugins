@@ -13,37 +13,36 @@
    save_state="y"
    date_written="2024-12-15 23:12:46"
    requires="5.07"
-   version="1.04"
+   version="1.1"
    >
    <description trim="y">
 <![CDATA[
-=========================================================================================================
+CycleCastSpells
+===============================================================================
+This plugin allows you to create "rotation" lists for spells or skills. 
+Each time you call a category, it casts the next spell in that list.
 
-cc help : to show this help file
+COMMANDS:
+  cc add <spell> <group>  - Adds a spell to a specific rotation group.
+  cc rem <spell> <group>  - Removes a spell from a group.
+  cc list                 - Shows all your saved groups and spells.
+  cc <group>              - Casts the next spell in that group's cycle.
+  ccx <group> <mob>       - Casts the next spell in cycle on a specific target.
+  cc clear <group>        - Deletes a specific group.
+  cc clear all            - Deletes everything.
 
-cc add <spellname> <group> : to add spells to list with their group type 
-                 ex: cc add fireball fire (usage cc fire)
-				 ex: cc add fireball a    (usage cc a)
-				 ex: cc add dispel bad    (usage cc bad)
-				 
+EXAMPLES:
+  1. Multi-spell Fire Rotation:
+     cc add 'fireball' f
+     cc add 'fire blast' f
+     cc add 'incinerate' f
+     (Typing 'cc f' will cycle through all three spells)
 
-cc rem <spellname> <group> : to remove spells from list by spellname and element type
-
-cc list : to show the list of spells for the each element type
-
-cc <group> : to cast spells of the given element in the order of the list, one at a time
-
-ccx <group> <mobname> : to start fights or cast at specific mobs using the list used
-
-cc clear <group> : to clear all spells for the given element (e.g., cc clear fire)
-
-cc clear all : to clear all categories and spells
-
-cc update check : to check for updates
-
-cc update install : to install new update
-
-=========================================================================================================
+  2. Debuffing a Mob:
+     cc add 'blind' debuff
+     cc add 'curse' debuff
+     ccx debuff dragon (Starts the fight by blinding/cursing the dragon)
+===============================================================================
 ]]>
 </description>
 
@@ -80,215 +79,59 @@ cc update install : to install new update
    regexp="y" 
    sequence="100" 
    ignore_case="y"
+   script="DisplaySpellList"
   >
-  <send> 
-      -- Check if there are any elements in the spellsTable
-      if next(spellsTable) == nil then
-          Note("No spells have been added to any element yet.")
-      else
-          -- List all categories (element types) and their spells
-          for element, spells in pairs(spellsTable) do
-              if #spells > 0 then
-                  Note("Spells for " .. element .. ": " .. table.concat(spells, ", "))
-              else
-                  Note("No spells found for " .. element .. " element.")
-              end
-          end
-      end
-  </send>
   </alias>
   
   <alias
    match="^cc add (.*) (.*)$"
    enabled="y"
-   send_to="12"
-   expand_variables="y"
-   sequence="100"
    regexp="y"
+   sequence="100"
+   ignore_case="y"
+   script="AddSpell"
   >
-  <send>
-        -- Get the spell name and element from the input
-        local spell = "%1"
-        local element = "%2"
-        
-        -- Check if a spell name and element were provided
-        if spell == "" or element == "" then
-            Note("Please provide both spell name and element type.")
-        else
-            -- Initialize the element list if it doesn't exist
-            if not spellsTable[element] then
-                spellsTable[element] = {}
-            end
-            
-            -- Check if the spell is already in the list for that element
-            local exists = false
-            for _, v in ipairs(spellsTable[element]) do
-                if v == spell then
-                    exists = true
-                    break
-                end
-            end
-
-            if exists then
-                Note("Spell '" .. spell .. "' is already in the " .. element .. " list.")
-            else
-                -- Add the spell to the list for the given element
-                table.insert(spellsTable[element], spell)
-                Note("Spell '" .. spell .. "' has been added to the " .. element .. " list.")
-            end
-        end
-  </send>
   </alias>
   
   <alias
    match="^cc rem (.*) (.*)$"
    enabled="y" 
-   send_to="12"
-   expand_variables="y"
    regexp="y" 
    sequence="100"
    ignore_case="y"
+   script="RemoveSpell"
   >
-  <send>
-        -- Get the spell name and element from the input
-        local spell = "%1"
-        local element = "%2"
-        
-        -- Check if a spell name and element were provided
-        if spell == "" or element == "" then
-            Note("Please provide both spell name and element type to remove.")
-        else
-            -- Check if the element exists in the table
-            if spellsTable[element] then
-                -- Search for the spell in the list and remove it
-                local foundIndex = nil
-                for i, v in ipairs(spellsTable[element]) do
-                    if v == spell then
-                        foundIndex = i
-                        break
-                    end
-                end
-
-                if foundIndex then
-                    -- Remove the spell at the found index
-                    table.remove(spellsTable[element], foundIndex)
-                    Note("Spell '" .. spell .. "' has been removed from the " .. element .. " list.")
-                else
-                    Note("Spell '" .. spell .. "' not found in the " .. element .. " list.")
-                end
-            else
-                Note("No spells found for the " .. element .. " element.")
-            end
-        end
-  </send>
   </alias>
 
   <alias
    match="^cc clear (.*)$"
    enabled="y"
-   send_to="12"
-   expand_variables="y"
-   sequence="100"
    regexp="y"
+   sequence="100"
    ignore_case="y"
+   script="ClearSpells"
   >
-  <send>
-        -- Get the element (category) from the input
-        local element = "%1"
-        
-        -- Check if the element exists in the spellsTable
-        if element == "all" then
-            -- Clear all categories
-            spellsTable = {}
-            Note("All categories have been cleared.")
-        else
-            -- Clear the specific category (element)
-            if spellsTable[element] then
-                spellsTable[element] = nil  -- Remove the spells for that category
-                Note("All spells for " .. element .. " have been cleared.")
-            else
-                Note("No spells found for " .. element .. " element to clear.")
-            end
-        end
-  </send>
-</alias>
+  </alias>
 
   <alias
-   match="^cc (?!help|add|rem|list|clear)(.*)$"
+   match="^cc (?!help|add|rem|list|clear|update)(.*)$"
    enabled="y"
-   send_to="12"
-   expand_variables="y"
-   sequence="100"
    regexp="y"
+   sequence="105"
    ignore_case="y"
->
-  <send>
-        -- Get the element name from the input
-        local element = "%1"
-        
-        -- Initialize currentIndex for the element if it doesn't exist
-        currentIndexes[element] = currentIndexes[element] or 1
+   script="CastCycle"
+  >
+  </alias>
 
-        -- Check if the element has spells
-        if spellsTable[element] then
-            -- Get the current spell from the table using the current index for that element
-            local spell = spellsTable[element][currentIndexes[element]]
-            
-            -- Cast the current spell using its name
-            Send("cast '" .. spell .. "'")
-
-            -- Notify the user
-            Note("Casting spell: " .. spell)
-
-            -- Move to the next spell in the list (cycle through)
-            currentIndexes[element] = currentIndexes[element] + 1
-            if currentIndexes[element] > #spellsTable[element] then
-                currentIndexes[element] = 1  -- Reset to the first spell if we reached the end
-            end
-        else
-            Note("No spells found for " .. element .. " element.")
-        end
-  </send>
-</alias>
-
-<alias
+  <alias
    match="^ccx (.*) (.*)$"
    enabled="y"
-   send_to="12"
-   expand_variables="y"
-   sequence="100"
    regexp="y"
+   sequence="100"
    ignore_case="y"
->
-  <send>
-        -- Get the element and mobname from the input
-        local element = "%1"
-		local mobname = "%2"
-        
-        -- Initialize currentIndex for the element if it doesn't exist
-        currentIndexes[element] = currentIndexes[element] or 1
-
-        -- Check if the element has spells
-        if spellsTable[element] then
-            -- Get the current spell from the table using the current index for that element
-            local spell = spellsTable[element][currentIndexes[element]]
-            
-            -- Cast the current spell using its name
-            Send("cast '" .. spell .. "' ".. mobname)
-
-            -- Notify the user
-            Note("Casting spell: " .. spell)
-
-            -- Move to the next spell in the list (cycle through)
-            currentIndexes[element] = currentIndexes[element] + 1
-            if currentIndexes[element] > #spellsTable[element] then
-                currentIndexes[element] = 1  -- Reset to the first spell if we reached the end
-            end
-        else
-            Note("No spells found for " .. element .. " element.")
-        end
-  </send>
-</alias>
+   script="CastCycle"
+  >
+  </alias>
 
 </aliases>
 
@@ -299,9 +142,225 @@ require "serialize"
 spellsTable = {}  -- A table to store spells by their element type
 currentIndexes = {}  -- A table to store current indexes for each element
 
-function OnHelp ()
-  world.Note (world.GetPluginInfo (world.GetPluginID (), 3))
+-- Cast Cycle or the cc command stuff for ccx and cc
+
+function CastCycle (name, line, wildcards)
+    local element = string.lower(wildcards[1])
+    local target = wildcards[2] -- Will be nil for 'cc', or the mob name for 'ccx'
+
+    if spellsTable[element] then
+        -- Initialize index if it doesn't exist
+        currentIndexes[element] = currentIndexes[element] or 1
+        
+        -- Safety check: if index somehow got higher than the table size, reset it
+        if currentIndexes[element] > #spellsTable[element] then
+            currentIndexes[element] = 1
+        end
+        
+        local spell = spellsTable[element][currentIndexes[element]]
+        
+        -- Build and send the command
+        local cmd = "cast '" .. spell .. "'"
+        if target and target ~= "" then
+            cmd = cmd .. " " .. target
+        end
+        Send(cmd)
+        
+        -- Professional Feedback
+        ColourTell("silver", "", "[", "cyan", "", "CycleCast", "silver", "", "] Casting: ", "white", "", spell)
+        if target then
+            ColourNote("silver", "", " on ", "yellow", "", target)
+        else
+            Note("") -- Just finishes the line
+        end
+
+        -- Move to the next spell
+        currentIndexes[element] = currentIndexes[element] + 1
+        if currentIndexes[element] > #spellsTable[element] then
+            currentIndexes[element] = 1 
+        end
+    else
+        ColourNote("orange", "", " [!] ", "white", "", "No rotation found for group: ", "cyan", "", element)
+    end
 end
+
+-- Clear Spells or cc clear
+
+function ClearSpells (name, line, wildcards)
+    local target = string.lower(wildcards[1])
+    
+    if target == "all" then
+        spellsTable = {}
+        currentIndexes = {}
+        ColourNote("red", "black", " ALL ", "white", "", " rotation categories and spells have been deleted.")
+    elseif spellsTable[target] then
+        spellsTable[target] = nil
+        currentIndexes[target] = 1
+        ColourNote("yellow", "", "Cleared all spells for the group: ", "cyan", "", target)
+    else
+        ColourNote("orange", "", "Group '", "white", "", target, "orange", "", "' not found. Nothing to clear.")
+    end
+end
+
+-- Remove Spell or cc rem
+
+function RemoveSpell (name, line, wildcards)
+    local spell_to_remove = wildcards[1]:lower()
+    local element = wildcards[2]:lower()
+
+    if not spellsTable[element] then
+        ColourNote("orange", "", "Group '", "cyan", "", element, "orange", "", "' does not exist.")
+        return
+    end
+
+    local foundIndex = nil
+    for i, spell in ipairs(spellsTable[element]) do
+        if spell:lower() == spell_to_remove then
+            foundIndex = i
+            break
+        end
+    end
+
+    if foundIndex then
+        local removed = table.remove(spellsTable[element], foundIndex)
+        ColourNote("red", "", "Removed '", "white", "", removed, "red", "", "' from the ", "cyan", "", element, "red", "", " list.")
+        
+        -- Reset index to 1 if the list is now empty or if index is out of bounds
+        if #spellsTable[element] == 0 then
+            currentIndexes[element] = 1
+        elseif (currentIndexes[element] or 1) > #spellsTable[element] then
+            currentIndexes[element] = 1
+        end
+    else
+        ColourNote("yellow", "", "Spell '", "white", "", wildcards[1], "yellow", "", "' was not found in the ", "cyan", "", element, "yellow", "", " list.")
+    end
+end
+
+-- Add spell to list or cc add function
+
+function AddSpell (name, line, wildcards)
+    local spell = wildcards[1]
+    local element = string.lower(wildcards[2]) -- Automatically makes group name lowercase
+
+    -- Ensure the element table exists
+    if not spellsTable[element] then
+        spellsTable[element] = {}
+        currentIndexes[element] = 1
+    end
+
+    -- Check for duplicates
+    local exists = false
+    for _, v in ipairs(spellsTable[element]) do
+        if v:lower() == spell:lower() then
+            exists = true
+            break
+        end
+    end
+
+    if exists then
+        ColourNote("yellow", "", "The spell '", "white", "", spell, "yellow", "", "' is already in the ", "cyan", "", element, "yellow", "", " list.")
+    else
+        table.insert(spellsTable[element], spell)
+        ColourNote("lime", "", "Added '", "white", "", spell, "lime", "", "' to the ", "cyan", "", element, "lime", "", " rotation.")
+    end
+end
+
+-- Display spells list or the cc list
+
+function DisplaySpellList (name, line, wildcards)
+    if next(spellsTable) == nil then
+        ColourNote("yellow", "", " [!] ", "white", "", "No spell rotations found. Use ", "cyan", "", "cc add <spell> <group>", "white", "", " to start.")
+        return
+    end
+
+    local divider = "-------------------------------------------------------------------------------"
+    ColourNote("orange", "", divider)
+    ColourNote("white", "", string.format("%-15s | %-5s | %-40s", "Group", "Index", "Spell Rotation"))
+    ColourNote("orange", "", divider)
+
+    for element, spells in pairs(spellsTable) do
+        local currentIdx = currentIndexes[element] or 1
+        local spellList = ""
+        
+        for i, spell in ipairs(spells) do
+            if i == currentIdx then
+                spellList = spellList .. "[" .. spell:upper() .. "]"
+            else
+                spellList = spellList .. spell
+            end
+            
+            if i < #spells then
+                spellList = spellList .. " -> "
+            end
+        end
+
+        -- Use ColourTell for the parts that stay on the SAME line
+        -- Use ColourNote ONLY for the final part to move to the NEXT line
+        ColourTell("cyan", "", string.format("%-15s", element))
+        ColourTell("silver", "", " | ")
+        ColourTell("yellow", "", string.format("  %-3d", currentIdx))
+        ColourTell("silver", "", " | ")
+        ColourNote("white", "", spellList) -- This one finishes the line
+    end
+    
+    ColourNote("orange", "", divider)
+    ColourNote("silver", "", "Note: Spells in ", "white", "", "[BRACKETS]", "silver", "", " are up next in the cycle.")
+end
+
+-- Help function
+
+function OnHelp ()
+  local p = "CycleCastSpells"
+  -- This pulls the version number directly from the <plugin version="..."> tag
+  local version = string.format("%1.2f", GetPluginInfo(GetPluginID(), 19) or 0)
+  local line = "==============================================================================="
+  
+  ColourNote("orange", "", line)
+  ColourNote("yellow", "", "Plugin: " .. p .. " (v" .. version .. ") - Help File")
+  Note("")
+  
+  -- Core Commands
+  ColourNote("cyan", "", "cc add <spell> <group>  ") ColourNote("white", "", "- Add a spell to a rotation")
+  ColourNote("cyan", "", "cc rem <spell> <group>  ") ColourNote("white", "", "- Remove a specific spell from a group")
+  ColourNote("cyan", "", "cc list                 ") ColourNote("white", "", "- View all your saved rotations")
+  ColourNote("cyan", "", "cc clear <group>        ") ColourNote("white", "", "- Delete a specific group")
+  ColourNote("cyan", "", "cc clear all            ") ColourNote("white", "", "- Wipe all data and start over")
+  Note("")
+
+  -- Casting Commands
+  ColourNote("cyan", "", "cc <group>              ") ColourNote("white", "", "- Cast the next spell in that cycle")
+  ColourNote("cyan", "", "ccx <group> <target>    ") ColourNote("white", "", "- Cast next spell on a specific mob/player")
+  Note("")
+
+  -- Maintenance Commands
+  ColourNote("cyan", "", "cc update check         ") ColourNote("white", "", "- Check GitHub for a newer version")
+  ColourNote("cyan", "", "cc update install       ") ColourNote("white", "", "- Download and install the latest update")
+  Note("")
+  
+  -- Advanced Examples
+  ColourNote("lime", "", "PRO TIPS & EXAMPLES:")
+  
+  -- Example 1
+  ColourNote("silver", "", " * ") 
+  ColourNote("yellow", "", "Complex Rotations: ") 
+  Note("Add multiple spells to one letter for easy spamming.")
+  Note("   cc add 'magic missile' 1; cc add 'ice bolt' 1; cc add 'shock' 1")
+  Note("   Now just spam 'cc 1' to rotate through three different elements.")
+  
+  -- Example 2
+  ColourNote("silver", "", " * ") 
+  ColourNote("yellow", "", "Targeting: ") 
+  Note("Use 'ccx' to start a fight. Example: 'ccx debuff fido'")
+  
+  -- Example 3
+  ColourNote("silver", "", " * ") 
+  ColourNote("yellow", "", "Quotes: ") 
+  Note("If a spell has two words, use quotes: cc add 'fire ball' f")
+  
+  ColourNote("orange", "", line)
+end
+
+-- Saving things
 
 function OnPluginSaveState ()
   -- Save both spellsTable and currentIndexes
@@ -311,8 +370,8 @@ end
 
 function OnPluginInstall ()
   ColourNote("blue", "yellow", "Plugin Installed! Type cc help - to show help")
-  assert(loadstring(GetVariable("spellsTable") or ""))()
-  assert(loadstring(GetVariable("currentIndexes") or ""))()
+  assert(loadstring(GetVariable("spellsTable") or "--"))()
+  assert(loadstring(GetVariable("currentIndexes") or "--"))()
 end
 
  ----------------------- Plugin Update Code -----------------------
