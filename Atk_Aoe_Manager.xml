@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.4"
+   version="1.5"
    >
 <description trim="y">
 <![CDATA[
@@ -182,23 +182,25 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 <!-- Aliases -->
 <aliases>
    <alias 
-  match="aam update check" 
+  match="^aam update check$" 
   enabled="y" 
   script="update_check_alias" 
   sequence="99"
+  regexp="y"
   >
   </alias>
   
   <alias 
-  match="aam update install" 
+  match="^aam update install$" 
   enabled="y" 
   script="update_install_alias" 
   sequence="99"
+  regexp="y"
   >
   </alias>
   <!-- Add primary attack spell -->
   <alias
-   match="aam add patk (.*)"
+   match="^aam add patk (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -226,7 +228,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Remove primary attack spell -->
   <alias
-   match="aam rem patk (.*)"
+   match="^aam rem patk (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -256,7 +258,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Add AoE spell -->
   <alias
-   match="aam add aoe (.*)"
+   match="^aam add aoe (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -284,7 +286,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Remove AoE spell -->
   <alias
-   match="aam rem aoe (.*)"
+   match="^aam rem aoe (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -314,7 +316,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- List Primary Attack Spells, AoE Spells, Skills or All -->
   <alias
-  match="aam list (all|patk|aoe|skill|shortsyntax)"
+  match="^aam list (all|patk|aoe|skill|shortsyntax)$"
   enabled="y"
   group="attack"
   send_to="12"
@@ -327,18 +329,20 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
   <!-- Show Help -->
   <alias
    script="OnHelp"
-   match="aam help"
+   match="^aam help$"
    enabled="y"
+   regexp="y"
   >
   </alias>
 
   <!-- Cast Attack Spell -->
   <alias
-   match="aam atk"
+   match="^aam atk$"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
+   regexp="y"
   >
     <send>-- Get variable
 	atkspell = GetVariable("atkspell")
@@ -352,11 +356,12 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
     </send>
   </alias>
    <alias
-   match="aam atk *"
+   match="^aam atk (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
+   regexp="y"
   >
     <send>-- Get variable
 	atkspell = GetVariable("atkspell")
@@ -373,11 +378,12 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Cast AoE Spell -->
   <alias
-   match="aam aoe"
+   match="^aam aoe$"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
+   regexp="y"
   >
     <send>-- Get variable
 	aoespell = GetVariable("aoespell")
@@ -393,7 +399,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Set the atkspell -->
   <alias
-   match="aam set atk (.*)"
+   match="^aam set atk (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -408,7 +414,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
   <!-- Set the aoespell -->
   <alias
-   match="aam set aoe (.*)"
+   match="^aam set aoe (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -423,7 +429,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
 <!-- Clear primary attack or AoE or skill or all -->
 <alias
-   match="aam clear (patk|aoe|skill|shortsyntax|all)"
+   match="^aam clear (patk|aoe|skill|shortsyntax|all)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -471,7 +477,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
   
   <!-- Set the skill -->
 <alias
-   match="aam set skill (.*)"
+   match="^aam set skill (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -488,7 +494,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
   
   <!-- Add Skill -->
 <alias
-   match="aam add skill (.*)"
+   match="^aam add skill (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -516,7 +522,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
 <!-- Remove Skill -->
 <alias
-   match="aam rem skill (.*)"
+   match="^aam rem skill (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -546,11 +552,12 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
   
 <!-- Cast Skill -->
 <alias
-   match="aam skill"
+   match="^aam skill$"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
+   regexp="y"
 >
     <send>-- Get variable
 	skill = GetVariable("skill")
@@ -573,11 +580,12 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 <!-- Cast Skill with Target -->
 
 <alias
-   match="aam skill *"
+   match="^aam skill (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
    sequence="100"
+   regexp="y"
 >
     <send>-- Get variable
 	skill = GetVariable("skill")
@@ -600,7 +608,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
 <!-- Set the skill short syntax -->
 <alias
-   match="aam setskill (.*) to (.*)"
+   match="^aam setskill (.*) to (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -618,7 +626,7 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 
 <!-- Show the short syntax for a skill -->
 <alias
-   match="aam showskill (.*)"
+   match="^aam showskill (.*)$"
    enabled="y"
    group="attack"
    send_to="12"
@@ -637,11 +645,12 @@ You can also list the current attack and AoE spells with 'aam list patk', 'aam l
 </alias>
 
 <alias
- match="aam status"
+ match="^aam status$"
  enabled="y"
  group="attack"
  send_to="12"
  sequence="100"
+ regexp="y"
 >
  <send>ShowStatus()</send>
 </alias>
@@ -751,8 +760,10 @@ function ShowStatus()
     local val_col = "lime"
     local count_col = "yellow"
     local border_col = "mediumblue"
+    
+    local version = GetPluginInfo(GetPluginID(), 19) or "???"
+    local v_str = "v" .. version
 
-    -- Get values
     local currentAtk = GetVariable("atkspell") or "None"
     local currentAoe = GetVariable("aoespell") or "None"
     local currentSkill = GetVariable("skill") or "None"
@@ -763,21 +774,18 @@ function ShowStatus()
     for _ in pairs(SkillShortSyntax) do shortCount = shortCount + 1 end
     shortCount = tostring(shortCount)
 
-    -- Formatting helper to ensure exact 63-character internal width
     local function PrintStatusLine(label, value, value_color)
         local total_width = 63
         local label_len = string.len(label)
         local padding_len = total_width - label_len - string.len(value)
-        
-        -- Create the exact number of spaces needed
-        local padding = string.rep(" ", padding_len)
-        
+        local padding = string.rep(" ", math.max(0, padding_len))
         ColourNote(border_col, "", "| ", label_col, "", label, value_color, "", value .. padding, border_col, "", " |")
     end
 
     Note("")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Atk_Aoe_Manager Status"), border_col, "", " |")
+    -- Header with version aligned right
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-54s", "Atk_Aoe_Manager Status"), header_col, "", string.format("%9s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
     PrintStatusLine("Active Atk: ", currentAtk, val_col)
@@ -802,9 +810,13 @@ function OnHelp()
     local command_col = "yellow"
     local desc_col = "white"
     local border_col = "mediumblue"
+    
+    local version = GetPluginInfo(GetPluginID(), 19) or "???"
+    local v_str = "v" .. version
 
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Atk_Aoe_Manager Help"), border_col, "", " |")
+    -- Header with version aligned right
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-54s", "Atk_Aoe_Manager Help"), header_col, "", string.format("%9s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
     local function HelpLine(cmd, desc)
