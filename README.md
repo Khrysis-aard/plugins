@@ -11,7 +11,7 @@ FT2_portal plugin - Help rerun the goal from Task 9 to the end for the portal. H
 Practice_all_or_list - Practice all or practice just things from lists you make. Keep up with only what you want to practice.
 
 <details>
-  <summary><b>PTW</b> (Click to see Status, Lists, and Window)</summary>
+  <summary><b>Potion_tracker</b> (Click to see Status, Lists, and Window)</summary>
   <p>Manages ptw/kw lists and status.</p>
 
   | Feature | Image Preview |
