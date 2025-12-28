@@ -12,7 +12,7 @@ Practice_all_or_list - Practice all or practice just things from lists you make.
 
 <details>
   <summary><b>Potion_tracker</b> (Click to see Status, Lists, and Window)</summary>
-  <p>Manages ptw/kw lists and status.</p>
+  <p>Manages potions in a miniwindow. Examples of some commands ptw list or ptw kw list and status.</p>
 
   | Feature | Image Preview |
   | :--- | :--- |
