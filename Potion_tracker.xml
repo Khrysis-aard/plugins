@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.3"
+   version="1.35"
   >
 </plugin>
 
@@ -53,6 +53,14 @@
       enabled="y"
       regexp="y"
       script="SetFontSize"
+    >
+    </alias>
+	<!--  Aliases to turn off potion msg and untracked potion msg  -->
+	<alias
+      match="^ptw usage (on|off)$"
+      enabled="y"
+      regexp="y"
+      script="ToggleUsageMessages"
     >
     </alias>
 	<alias
@@ -294,6 +302,7 @@
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, font_size, Dina, font_size, 1000, 5, true, false)
     
+	show_usage_messages = GetVariable("show_usage_messages") ~= "false"
 	show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
 	approved_potions = approved_potions or {}
 	potion_inventory = potion_inventory or {}
@@ -344,6 +353,7 @@
       SetVariable("font_size", tostring(font_size))
       SetVariable("show_untracked_messages", tostring(show_untracked_messages))
 	  SetVariable("order_name_first", tostring(order_name_first))
+	  SetVariable("show_usage_messages", tostring(show_usage_messages))
     end
 
 
@@ -378,7 +388,13 @@
       ShowHelp()
     end
 
-    function ToggleDisplayOrder()
+    function ToggleUsageMessages(name, line, wildcards)
+      show_usage_messages = (wildcards[1] == "on")
+      SetVariable("show_usage_messages", tostring(show_usage_messages))
+      Note("Usage feedback messages are now " .. (show_usage_messages and "ON" or "OFF"))
+    end
+	
+	function ToggleDisplayOrder()
       order_name_first = not order_name_first
       SetVariable("order_name_first", tostring(order_name_first))
       Note("Display order is now: " .. (order_name_first and "Potion Name First" or "Count First"))
@@ -689,31 +705,42 @@ end
     end
 
 	function OnUsePotion(name, line, wildcards)
-      local raw_name = wildcards[1]
-      local potion_name = normalize_potion_name(raw_name)
+    local raw_name = wildcards[1]
+    local potion_name = normalize_potion_name(raw_name)
 
-      if not approved_potions[potion_name] then
+    if not approved_potions[potion_name] then
         if show_untracked_messages then
-          Note("Ignoring unapproved item: " .. potion_name)
+            Note("Ignoring unapproved item: " .. potion_name)
         end
         return
-      end
-
-      if potion_inventory[potion_name] then
-        potion_inventory[potion_name] = potion_inventory[potion_name] - 1
-
-        if potion_inventory[potion_name] <= 0 then
-          potion_inventory[potion_name] = nil
-          Note("Used last " .. potion_name .. ". Removed from inventory.")
-        else
-          Note("Used one " .. potion_name .. ". Remaining: " .. potion_inventory[potion_name])
-        end
-      else
-        Note("Used untracked potion: " .. potion_name)
-      end
-
-      refresh_miniwindow()
     end
+
+    if potion_inventory[potion_name] then
+        potion_inventory[potion_name] = potion_inventory[potion_name] - 1
+        local count = potion_inventory[potion_name]
+        
+        -- Logic to turn off messages
+        if show_usage_messages ~= false then
+            local color = "lime"
+            if count <= color_thresholds.low then color = "red"
+            elseif count <= color_thresholds.medium then color = "magenta"
+            elseif count <= color_thresholds.high then color = "yellow" end
+
+            local display_name = potion_aliases[potion_name] or potion_name
+            
+            if count <= 0 then
+                potion_inventory[potion_name] = nil
+                ColourNote("white", "red", "[PTW] Used last " .. display_name .. "! Item removed.")
+            else
+                ColourNote("gray", "", "[PTW] ", "white", "", "Used ", color, "", display_name, "white", "", ". Remaining: ", color, "", tostring(count))
+            end
+        end
+    else
+        Note("Used untracked potion: " .. potion_name)
+    end
+
+    refresh_miniwindow()
+end
 	
 	function OnReceivePotion(name, line, wildcards)
       local count = tonumber(wildcards[1])
@@ -881,6 +908,7 @@ end
     local version = GetPluginInfo(GetPluginID(), 19) or "???"
     local v_str = "v" .. version
 
+    Note("")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-54s", "Potion Tracker Help"), header_col, "", string.format("%9s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
@@ -909,18 +937,21 @@ end
     HelpLine("ptw order", "Toggle Name:Count or Count:Name.")
     HelpLine("ptw font <6-32>", "Change window font size.")
     HelpLine("ptw untracked <on|off>", "Toggle notices for unapproved items.")
+    HelpLine("ptw usage <on|off>", "Toggle colored feedback when using.")
     HelpLine("ptw color reset", "Reset colors to 4, 9, 14.")
     HelpLine("ptw color <L> <M> <H>", "Set custom color thresholds.")
     
-    -- Sub-explanation for colors
-    ColourNote(hint_col, "", "     Example: 'ptw color 3 7 12' results in:")
-    ColourNote(hint_col, "", "     Red: 0-3 | Mag: 4-7 | Yel: 8-12 | Grn: 13+")
+    -- Color Threshold Explanation
+    ColourNote(hint_col, "", "      Example: 'ptw color 3 7 12' results in:")
+    ColourNote(hint_col, "", "      Red: 0-3 | Mag: 4-7 | Yel: 8-12 | Grn: 13+")
+    
     Note("")
     ColourNote(header_col, "", "--- Plugin Updates ---")
     HelpLine("ptw update check", "Check GitHub for a newer version.")
     HelpLine("ptw update install", "Download and install latest version.")
     Note("")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
+    Note("")
 end
 	
 	-- Showstatus function for the alias
@@ -932,11 +963,9 @@ end
     local count_col = "yellow"
     local border_col = "mediumblue"
     
-    -- Get version from plugin info
     local version = GetPluginInfo(GetPluginID(), 19) or "???"
     local v_str = "v" .. version
 
-    -- Calculate list counts
     local approvedCount = 0
     for _ in pairs(approved_potions or {}) do approvedCount = approvedCount + 1 end
     
@@ -959,9 +988,10 @@ end
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-54s", "Potion Tracker Status"), header_col, "", string.format("%9s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
-    PrintStatusLine("Font Size: ", tostring(font_size), val_col)
-    PrintStatusLine("Display Order: ", order_name_first and "Name First" or "Count First", val_col)
-    PrintStatusLine("Untracked Msgs: ", show_untracked_messages and "On" or "Off", val_col)
+    PrintStatusLine("Font Size      : ", tostring(font_size), val_col)
+    PrintStatusLine("Display Order  : ", order_name_first and "Name First" or "Count First", val_col)
+    PrintStatusLine("Untracked Msgs : ", show_untracked_messages and "On" or "Off", val_col)
+    PrintStatusLine("Usage Msgs     : ", (show_usage_messages ~= false) and "On" or "Off", val_col)
     
     ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Color Thresholds:"), border_col, "", " |")
