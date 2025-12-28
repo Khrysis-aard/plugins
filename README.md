@@ -10,7 +10,17 @@ FT2_portal plugin - Help rerun the goal from Task 9 to the end for the portal. H
 
 Practice_all_or_list - Practice all or practice just things from lists you make. Keep up with only what you want to practice.
 
-Potion_tracker - Keeps track of potions types and how many remaining in a miniwindow. Works with scrolls and foods also.
+<details>
+  <summary><b>PTW</b> (Click to see Status, Lists, and Window)</summary>
+  <p>Manages ptw/kw lists and status.</p>
+
+  | Feature | Image Preview |
+  | :--- | :--- |
+  | **PTW & KW Lists** | ![Lists](./assets/ptwimage1.png) |
+  | **PTW Status** | ![Status](./assets/ptwimage2.png) |
+  | **PTW Window** | ![Window](./assets/ptwimage3.png) |
+
+</details>
 
 wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)
 
