@@ -2,7 +2,21 @@
 
 Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps check on the status of plugins if they need updates etc.
 
-Aoe_Atk_Manager -  Automatically update aoe, atk, or skill variables based on the list you create and usable through built in aliases in plugin. The aoe, atk, or skill variables will be automatically updated through remorts or tiers based on the list. The plugin now handles skills and setting shortsyntax words for using skills that have names like Kobold spray but uses kspray to work. This lets you have it set to be autoupdated but still use the right syntax to use the skill with aam skill or aam skill target.
+<details>
+  <summary><b>Aoe_Atk_Manager.xml</b> (Click to see Status and List)</summary>
+  
+  > **Description:** Automatically updates AOE, ATK, or Skill variables based on a custom list that persists through remorts or tiers. 
+
+  **Key Features:**
+  * **Auto-Updating:** Variables stay current even after you Tier or Remort.
+  * **Syntax Mapping:** Handles skills that require specific input (e.g., mapping *Kobold Spray* to the required `kspray` command).
+  * **Unified Commands:** Use `aam skill` or `aam skill <target>` regardless of which skill is currently active in your list.
+
+  | AAM Status | AAM List All |
+  | :--- | :--- |
+  | ![AAM Status](./assets/aamimage1.png) | ![AAM List All](./assets/aamimage2.png) |
+
+</details>
 
 <details>
   <summary><b>CycleCastSpells</b> (Click to see demo)</summary>
