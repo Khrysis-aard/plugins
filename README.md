@@ -6,6 +6,15 @@
 > **Streamlined character progression, advanced variable management, and task navigation.**
 
 ---
+
+### 📥 Quick Start
+**Requirement:** [MUSHclient](-http://www.gammon.com.au/mushclient/mushclient.htm-) + [Aardwolf MUD](https://www.aardwolf.com/)
+
+**To Install:** 1. Download the desired `.xml` file from the list above.
+2. In MUSHclient, press **Ctrl + Shift + P** (Plugin Manager).
+3. Click **Add** and select the file you downloaded.
+
+---
 </div>
 
 <details>
