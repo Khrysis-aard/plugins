@@ -1,4 +1,12 @@
-# plugins
+<div align="center">
+
+# ⚔️ Khrysis MUSHclient Plugins ⚔️
+### *Aardwolf MUD Utility & Logic Collection*
+
+> **Streamlined character progression, advanced variable management, and task navigation.**
+
+---
+</div>
 
 <details>
   <summary><b>Khrysis_Plugin_Manager</b> (Click to see Dashboard)</summary>
