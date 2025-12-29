@@ -12,9 +12,9 @@ Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps che
   * **Syntax Mapping:** Handles skills that require specific input (e.g., mapping *Kobold Spray* to the required `kspray` command).
   * **Unified Commands:** Use `aam skill` or `aam skill <target>` regardless of which skill is currently active in your list.
 
-  | AAM Status | AAM List All |
+  | AAM List All | AAM Status |
   | :--- | :--- |
-  | ![AAM Status](./assets/aamimage1.png) | ![AAM List All](./assets/aamimage2.png) |
+  | ![AAM List All](./assets/aamimage1.png) | ![AAM Status](./assets/aamimage2.png) |
 
 </details>
 
