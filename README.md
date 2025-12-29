@@ -4,7 +4,15 @@ Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps che
 
 Aoe_Atk_Manager -  Automatically update aoe, atk, or skill variables based on the list you create and usable through built in aliases in plugin. The aoe, atk, or skill variables will be automatically updated through remorts or tiers based on the list. The plugin now handles skills and setting shortsyntax words for using skills that have names like Kobold spray but uses kspray to work. This lets you have it set to be autoupdated but still use the right syntax to use the skill with aam skill or aam skill target.
 
-CycleCastSpells - Allows you to create lists of spells to cast from using simple commands. Make as many dif types of list and define your own command to cast through it.
+<details>
+  <summary><b>CycleCastSpells.xml</b> (Click to see demo)</summary>
+  
+  > **Description:** Allows you to create lists of spells to cast from using simple commands. Make as many different types of lists and define your own command to cast through it.
+
+  **CC List Output:**
+  ![CC List](./assets/ccimage1.png)
+
+</details>
 
 FT2_portal plugin - Help rerun the goal from Task 9 to the end for the portal. Has riddles built in so no need for both plugins                                                       
 
