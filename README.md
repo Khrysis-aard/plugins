@@ -3,7 +3,7 @@
 Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps check on the status of plugins if they need updates etc.
 
 <details>
-  <summary><b>Aoe_Atk_Manager.xml</b> (Click to see Status and List)</summary>
+  <summary><b>Aoe_Atk_Manager</b> (Click to see Status and List)</summary>
   
   > **Description:** Automatically updates AOE, ATK, or Skill variables based on a custom list that persists through remorts or tiers. 
 
@@ -30,7 +30,21 @@ Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps che
 
 FT2_portal plugin - Help rerun the goal from Task 9 to the end for the portal. Has riddles built in so no need for both plugins                                                       
 
-Practice_all_or_list - Practice all or practice just things from lists you make. Keep up with only what you want to practice.
+<details>
+  <summary><b>Practice_all_or_list</b> (Click to see List examples)</summary>
+  
+  > **Description:** Practice everything at once or keep a focused list of only the specific spells/skills you want to train. 
+
+  **Key Features:**
+  * **Automatic Generation:** Syncs with your spellup list for easy management.
+  * **Custom Control:** Create your own custom lists to target specific skills.
+  * **Efficiency:** Save time and practices by only training exactly what you need.
+
+  | Spellup List (cprac slist) | Custom List (cprac clist) |
+  | :--- | :--- |
+  | ![Spellup List](./assets/cpracimage1.png) | ![Custom List](./assets/cpracimage2.png) |
+
+</details>
 
 <details>
   <summary><b>Potion_tracker</b> (Click to see Status, Lists, and Window)</summary>
