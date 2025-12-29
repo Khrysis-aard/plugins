@@ -1,6 +1,19 @@
 # plugins
 
-Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps check on the status of plugins if they need updates etc.
+<details>
+  <summary><b>Khrysis_Plugin_Manager</b> (Click to see Dashboard)</summary>
+  
+  > **Description:** The central hub for all Khrysis plugins. This dashboard allows you to manage everything in one place and keep a check on the status of your plugins.
+
+  **Key Features:**
+  * **Unified Management:** See all your installed Khrysis plugins at a glance using the `kpm list` command.
+  * **Dashboard View:** A clean interface to monitor your plugins and their current status.
+  * **Organized Control:** Manage settings and stay on top of your plugin library from one central location.
+
+  **KPM Dashboard / List Output:**
+  ![KPM Dashboard](./assets/kpmimage1.png)
+
+</details>
 
 <details>
   <summary><b>Aoe_Atk_Manager</b> (Click to see Status and List)</summary>
