@@ -28,7 +28,20 @@ Khrysis_Plugin_Manager - Manage all my plugins in one place. Dashboard keeps che
 
 </details>
 
-FT2_portal plugin - Help rerun the goal from Task 9 to the end for the portal. Has riddles built in so no need for both plugins                                                       
+<details>
+  <summary><b>FT2_portal</b> (Click to see Guide Window)</summary>
+  
+  > **Description:** Streamlines the FT2 portal goal from Task 9 all the way to the end. This is an all-in-one solution that includes a built-in riddle solver, so no additional riddle plugins are required.
+
+  **Key Features:**
+  * **Goal Navigation:** Specifically designed to guide you through the final stages of the FT2 portal goal.
+  * **Built-in Riddles:** Automatically handles the riddle portions of the quest.
+  * **Dedicated Guide Window:** Displays your current progress and next steps in a clean miniwindow.
+
+  **FT2 Guide Window:**
+  ![FT2 Guide](./assets/ft2image1.png)
+
+</details>                                                       
 
 <details>
   <summary><b>Practice_all_or_list</b> (Click to see List examples)</summary>
