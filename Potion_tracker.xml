@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.35"
+   version="1.4"
   >
 </plugin>
 
@@ -172,6 +172,15 @@
      script="ShowStatus"
      >
     </alias>
+	
+	<!--  Alias to turn off quaff messages if approved potion  -->
+	<alias
+     match="^ptw quiet (on|off)$"
+     enabled="y"
+     regexp="y"
+     script="ToggleQuietMode"
+     >
+    </alias>
   </aliases>
 	
 	<triggers>
@@ -181,7 +190,8 @@
       match="^You (?:quaff|eat) (.+?)\.$"
       script="OnUsePotion"
       regexp="y"
-	  sequence="3"
+      sequence="3"
+      omit_from_output="y"
     />
 	<!-- Trigger for stealing potions -->
 	<trigger
@@ -302,6 +312,7 @@
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, font_size, Dina, font_size, 1000, 5, true, false)
     
+	hide_quaff_messages = GetVariable("hide_quaff_messages") ~= "false"
 	show_usage_messages = GetVariable("show_usage_messages") ~= "false"
 	show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
 	approved_potions = approved_potions or {}
@@ -354,6 +365,7 @@
       SetVariable("show_untracked_messages", tostring(show_untracked_messages))
 	  SetVariable("order_name_first", tostring(order_name_first))
 	  SetVariable("show_usage_messages", tostring(show_usage_messages))
+	  SetVariable("hide_quaff_messages", tostring(hide_quaff_messages))
     end
 
 
@@ -387,8 +399,14 @@
       refresh_miniwindow()
       ShowHelp()
     end
-
-    function ToggleUsageMessages(name, line, wildcards)
+	
+	function ToggleQuietMode(name, line, wildcards)
+      hide_quaff_messages = (wildcards[1] == "on")
+      SetVariable("hide_quaff_messages", tostring(hide_quaff_messages))
+      Note("Potion quaff silencing is now " .. (hide_quaff_messages and "ON" or "OFF"))
+    end
+	
+	function ToggleUsageMessages(name, line, wildcards)
       show_usage_messages = (wildcards[1] == "on")
       SetVariable("show_usage_messages", tostring(show_usage_messages))
       Note("Usage feedback messages are now " .. (show_usage_messages and "ON" or "OFF"))
@@ -704,22 +722,46 @@ end
       OnSellPotion(name, line, new_wildcards)
     end
 
-	function OnUsePotion(name, line, wildcards)
+	function OnUsePotion(name, line, wildcards, styles) -- added styles here
     local raw_name = wildcards[1]
     local potion_name = normalize_potion_name(raw_name)
+    local is_approved = approved_potions[potion_name]
 
-    if not approved_potions[potion_name] then
+    -- HELPER FUNCTION: Uses the styles object passed directly by the trigger
+    local function ReprintOriginalLine()
+        -- If styles weren't passed, try to grab them from the last line info
+        local styles_to_use = styles or GetTriggerInfo(GetPluginID(), name, 11) 
+        
+        if styles_to_use then
+            for _, s in ipairs(styles_to_use) do
+                ColourTell(RGBColourToName(s.textcolour), RGBColourToName(s.backcolour), s.text)
+            end
+            Note("") -- End the line
+        else
+            -- Fallback if styles aren't available
+            AnsiNote(line)
+        end
+    end
+
+    -- 1. IF NOT APPROVED
+    if not is_approved then
+        ReprintOriginalLine()
         if show_untracked_messages then
             Note("Ignoring unapproved item: " .. potion_name)
         end
         return
     end
 
+    -- 2. IF APPROVED BUT QUIET MODE IS OFF
+    if not hide_quaff_messages then
+        ReprintOriginalLine()
+    end
+
+    -- 3. INVENTORY LOGIC (stays the same)
     if potion_inventory[potion_name] then
         potion_inventory[potion_name] = potion_inventory[potion_name] - 1
         local count = potion_inventory[potion_name]
         
-        -- Logic to turn off messages
         if show_usage_messages ~= false then
             local color = "lime"
             if count <= color_thresholds.low then color = "red"
@@ -735,8 +777,6 @@ end
                 ColourNote("gray", "", "[PTW] ", "white", "", "Used ", color, "", display_name, "white", "", ". Remaining: ", color, "", tostring(count))
             end
         end
-    else
-        Note("Used untracked potion: " .. potion_name)
     end
 
     refresh_miniwindow()
@@ -935,6 +975,7 @@ end
     Note("")
     ColourNote(header_col, "", "--- Configuration & Colors ---")
     HelpLine("ptw order", "Toggle Name:Count or Count:Name.")
+    HelpLine("ptw quiet <on|off>", "Silence 'You quaff...' for approved items.")
     HelpLine("ptw font <6-32>", "Change window font size.")
     HelpLine("ptw untracked <on|off>", "Toggle notices for unapproved items.")
     HelpLine("ptw usage <on|off>", "Toggle colored feedback when using.")
@@ -968,45 +1009,51 @@ end
 
     local approvedCount = 0
     for _ in pairs(approved_potions or {}) do approvedCount = approvedCount + 1 end
-    
     local inventoryCount = 0
     for _ in pairs(potion_inventory or {}) do inventoryCount = inventoryCount + 1 end
-    
     local keywordCount = 0
     for _ in pairs(potion_aliases or {}) do keywordCount = keywordCount + 1 end
 
-    local function PrintStatusLine(label, value, value_color)
-        local total_width = 63
-        local label_len = string.len(label)
-        local padding_len = total_width - label_len - string.len(value)
-        local padding = string.rep(" ", math.max(0, padding_len))
-        ColourNote(border_col, "", "| ", label_col, "", label, value_color, "", value .. padding, border_col, "", " |")
+    -- This matches your image's alignment (Label : Value)
+    local function PrintStatusLine(label, value, value_color, prefix)
+        local pre = prefix or ""
+        local val_str = pre .. tostring(value)
+        local padding = string.rep(" ", 46 - string.len(val_str))
+        
+        ColourTell(border_col, "", "| ")
+        ColourTell(label_col, "", string.format("%-15s", label) .. " : ")
+        ColourTell(value_color, "", val_str .. padding)
+        ColourNote(border_col, "", " |")
     end
 
     Note("")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    ColourNote(border_col, "", "| ", header_col, "", string.format("%-54s", "Potion Tracker Status"), header_col, "", string.format("%9s", v_str), border_col, "", " |")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-53s", "Potion Tracker Status"), header_col, "", string.format("%10s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
-    PrintStatusLine("Font Size      : ", tostring(font_size), val_col)
-    PrintStatusLine("Display Order  : ", order_name_first and "Name First" or "Count First", val_col)
-    PrintStatusLine("Untracked Msgs : ", show_untracked_messages and "On" or "Off", val_col)
-    PrintStatusLine("Usage Msgs     : ", (show_usage_messages ~= false) and "On" or "Off", val_col)
+    -- Configuration Section
+    PrintStatusLine("Font Size", font_size or 10, val_col)
+    PrintStatusLine("Display Order", order_name_first and "Name First" or "Count First", val_col)
+    PrintStatusLine("Quiet Mode", hide_quaff_messages and "On" or "Off", val_col) -- Added here
+    PrintStatusLine("Untracked Msgs", show_untracked_messages and "On" or "Off", val_col)
+    PrintStatusLine("Usage Msgs", show_usage_messages and "On" or "Off", val_col)
     
-    ColourNote(border_col, "", "|                                                                 |")
+    Note("")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Color Thresholds:"), border_col, "", " |")
     
-    PrintStatusLine("Red (Low)      : <= ", tostring(color_thresholds.low), "red")
-    PrintStatusLine("Magenta (Mid)  : <= ", tostring(color_thresholds.medium), "magenta")
-    PrintStatusLine("Yellow (High)  : <= ", tostring(color_thresholds.high), "yellow")
-    PrintStatusLine("Green (Great)  :  > ", tostring(color_thresholds.high), "lime")
-
-    ColourNote(border_col, "", "|                                                                 |")
+    -- Threshold Section (matching your image format: Label : <= Value)
+    PrintStatusLine("Red (Low)", color_thresholds.low, "red", "<= ")
+    PrintStatusLine("Magenta (Mid)", color_thresholds.medium, "magenta", "<= ")
+    PrintStatusLine("Yellow (High)", color_thresholds.high, "yellow", "<= ")
+    PrintStatusLine("Green (Great)", color_thresholds.high, "lime", "> ")
+    
+    Note("")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Database Statistics:"), border_col, "", " |")
     
-    PrintStatusLine("Approved Potions: ", tostring(approvedCount), count_col)
-    PrintStatusLine("Currently Owned : ", tostring(inventoryCount), count_col)
-    PrintStatusLine("Keywords Set    : ", tostring(keywordCount), count_col)
+    -- Stats Section (Matching your image labels)
+    PrintStatusLine("Approved Potions", approvedCount, count_col)
+    PrintStatusLine("Currently Owned", inventoryCount, count_col)
+    PrintStatusLine("Keywords Set", keywordCount, count_col)
     
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     Note("")
@@ -1108,6 +1155,17 @@ json = require("json")
      end
  end
  ----------------------- End Plugin Update Code -----------------------
+-- ============================================================================
+-- MODIFICATION LOG & NOTES
+-- ============================================================================
+-- If you update DINV, the "Consuming" message will return. 
+-- To silence it again, search DINV for "Consuming L" and comment out this block:
+--
+--  MOD: Silencing the consume message to avoid spam
+--  -- dbot.info("(" .. countColor .. count .. " available@W) " ..
+--  --           "Consuming L" .. entry.level .. " \"@C" .. typeName .. "@W\" @Y" ..
+--  --           (inv.items.getStatField(finalId, invStatFieldName) or "") .. "@W")
+-- ============================================================================
     ]]>
   </script>
 </muclient>
