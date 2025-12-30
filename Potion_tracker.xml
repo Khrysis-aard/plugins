@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.45"
+   version="1.46"
   >
 </plugin>
 
@@ -312,9 +312,9 @@
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, font_size, Dina, font_size, 1000, 5, true, false)
     
-	hide_quaff_messages = GetVariable("hide_quaff_messages") ~= "false"
+	hide_quaff_messages = GetVariable("hide_quaff_messages") == "true"
 	show_usage_messages = GetVariable("show_usage_messages") ~= "false"
-	show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
+	show_untracked_messages = GetVariable("show_untracked_messages") == "true"
 	approved_potions = approved_potions or {}
 	potion_inventory = potion_inventory or {}
 	color_thresholds = color_thresholds or { low = 4, medium = 9, high = 14 }
