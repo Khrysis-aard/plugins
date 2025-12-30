@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.4"
+   version="1.45"
   >
 </plugin>
 
@@ -1014,16 +1014,21 @@ end
     local keywordCount = 0
     for _ in pairs(potion_aliases or {}) do keywordCount = keywordCount + 1 end
 
-    -- This matches your image's alignment (Label : Value)
+    -- This function handles the wide spacing before the colon
     local function PrintStatusLine(label, value, value_color, prefix)
         local pre = prefix or ""
         local val_str = pre .. tostring(value)
-        local padding = string.rep(" ", 46 - string.len(val_str))
+        
+        -- Label(16) + " : "(3) + Value(?) + Padding(?) = 63
+        local used_space = 16 + 3 + string.len(val_str)
+        local padding = string.rep(" ", math.max(0, 63 - used_space))
         
         ColourTell(border_col, "", "| ")
-        ColourTell(label_col, "", string.format("%-15s", label) .. " : ")
-        ColourTell(value_color, "", val_str .. padding)
-        ColourNote(border_col, "", " |")
+        ColourTell(label_col, "", string.format("%-16s", label))
+        ColourTell(label_col, "", " : ")
+        ColourTell(value_color, "", val_str)
+        ColourTell(border_col, "", padding .. " |")
+        Note("") 
     end
 
     Note("")
@@ -1031,26 +1036,26 @@ end
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-53s", "Potion Tracker Status"), header_col, "", string.format("%10s", v_str), border_col, "", " |")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
-    -- Configuration Section
+    -- Config
     PrintStatusLine("Font Size", font_size or 10, val_col)
     PrintStatusLine("Display Order", order_name_first and "Name First" or "Count First", val_col)
-    PrintStatusLine("Quiet Mode", hide_quaff_messages and "On" or "Off", val_col) -- Added here
+    PrintStatusLine("Quiet Mode", hide_quaff_messages and "On" or "Off", val_col)
     PrintStatusLine("Untracked Msgs", show_untracked_messages and "On" or "Off", val_col)
     PrintStatusLine("Usage Msgs", show_usage_messages and "On" or "Off", val_col)
     
-    Note("")
+    ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Color Thresholds:"), border_col, "", " |")
     
-    -- Threshold Section (matching your image format: Label : <= Value)
+    -- Thresholds
     PrintStatusLine("Red (Low)", color_thresholds.low, "red", "<= ")
-    PrintStatusLine("Magenta (Mid)", color_thresholds.medium, "magenta", "<= ")
+    PrintStatusLine("Magenta (Med)", color_thresholds.medium, "magenta", "<= ")
     PrintStatusLine("Yellow (High)", color_thresholds.high, "yellow", "<= ")
     PrintStatusLine("Green (Great)", color_thresholds.high, "lime", "> ")
     
-    Note("")
+    ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Database Statistics:"), border_col, "", " |")
     
-    -- Stats Section (Matching your image labels)
+    -- Stats
     PrintStatusLine("Approved Potions", approvedCount, count_col)
     PrintStatusLine("Currently Owned", inventoryCount, count_col)
     PrintStatusLine("Keywords Set", keywordCount, count_col)
