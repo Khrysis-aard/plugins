@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.47"
+   version="1.48"
   >
 </plugin>
 
@@ -436,26 +436,29 @@ function AddSyncContainer(name, line, wildcards)
 end
 
 function DoSync()
+    -- 1. Check for bags FIRST and warn the user BEFORE the capture starts
     if not sync_containers or next(sync_containers) == nil then
-        Note("[PTW] No containers set. Use 'ptw sync add <id>'.")
-        return
+        Note("[PTW] Note: No bags set. Only syncing main inventory. Use 'ptw sync add <id>' to add bags.")
     end
 
+    -- 2. Now initialize and start the capture
     potion_inventory = {} 
     capture_sync_active = true
     EnableTrigger("potion_sync_capture", true)
     
+    -- 3. Send the start tag
     SendNoEcho("echo {ptw-start}")
     
-    -- 1. Scan main inventory first
+    -- 4. Send the MUD commands
     SendNoEcho("invsort")
     
-    -- 2. Scan each specific container
-    for id, _ in pairs(sync_containers) do
-        SendNoEcho("invsort " .. id)
+    if sync_containers and next(sync_containers) ~= nil then
+        for id, _ in pairs(sync_containers) do
+            SendNoEcho("invsort " .. id)
+        end
     end
     
-    -- 0.5s delay to catch everything
+    -- 5. Close it out
     DoAfterSpecial(0.5, 'SendNoEcho("echo {ptw-end}")', 12)
 end
 
