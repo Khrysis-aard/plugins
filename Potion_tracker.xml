@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.46"
+   version="1.47"
   >
 </plugin>
 
@@ -181,10 +181,76 @@
      script="ToggleQuietMode"
      >
     </alias>
+	
+	<!--  Aliases for Sync counts for potions from inventory and bag if bagid is set  -->
+	<alias
+      match="^ptw sync add (\d+)$"
+      enabled="y"
+      regexp="y"
+      script="AddSyncContainer" 
+      sequence="100"
+    />
+
+    <alias
+      match="^ptw sync clear$"
+      enabled="y"
+      regexp="y"
+      send_to="12"
+      sequence="100"
+    >
+       <send>
+        sync_containers = {}
+        ColourNote("yellow", "", "[PTW] Sync container list cleared.")
+        SaveState()
+      </send>
+    </alias>
+
+    <alias
+      match="^ptw sync$"
+      enabled="y"
+      regexp="y"
+      script="DoSync"
+      sequence="100"
+    />
+	
   </aliases>
 	
 	<triggers>
-    <!-- Trigger for using potions -->
+    <!-- Trigger for using Sync -->
+	<trigger
+ match="^\{ptw-start\}$"
+ enabled="y"
+ regexp="y"
+ omit_from_output="y"
+ sequence="1"
+ send_to="12"
+>
+ <send>
+    potion_inventory = {} 
+    capture_sync_active = true
+    EnableTrigger("potion_sync_capture", true)
+ </send>
+</trigger>
+
+<trigger
+ match="^\{ptw-end\}$"
+ enabled="y"
+ regexp="y"
+ omit_from_output="y"
+ sequence="1"
+ script="OnSyncComplete"
+/>
+
+<trigger
+ name="potion_sync_capture"
+ enabled="n"
+ match="*" 
+ omit_from_output="y"
+ script="OnSyncLine"
+ sequence="5" 
+/>
+
+	<!-- Trigger for using potions -->
     <trigger
       enabled="y"
       match="^You (?:quaff|eat) (.+?)\.$"
@@ -319,6 +385,7 @@
 	potion_inventory = potion_inventory or {}
 	color_thresholds = color_thresholds or { low = 4, medium = 9, high = 14 }
 	potion_aliases = potion_aliases or {}
+    sync_containers = sync_containers or {}
 	
 	  -- Hide the miniwindow
 	function hide_mw()
@@ -354,6 +421,83 @@
 	  my_window:show()
     end
 
+-- New Sync Command Functions
+
+function AddSyncContainer(name, line, wildcards)
+    local id = wildcards[1]
+    sync_containers = sync_containers or {}
+    sync_containers[id] = true
+    
+    ColourTell("yellow", "", "[PTW] Added container ")
+    ColourTell("cyan", "", id)
+    ColourNote("yellow", "", " to sync list.")
+    
+    SaveState() -- This ensures the ID is saved to your variables
+end
+
+function DoSync()
+    if not sync_containers or next(sync_containers) == nil then
+        Note("[PTW] No containers set. Use 'ptw sync add <id>'.")
+        return
+    end
+
+    potion_inventory = {} 
+    capture_sync_active = true
+    EnableTrigger("potion_sync_capture", true)
+    
+    SendNoEcho("echo {ptw-start}")
+    
+    -- 1. Scan main inventory first
+    SendNoEcho("invsort")
+    
+    -- 2. Scan each specific container
+    for id, _ in pairs(sync_containers) do
+        SendNoEcho("invsort " .. id)
+    end
+    
+    -- 0.5s delay to catch everything
+    DoAfterSpecial(0.5, 'SendNoEcho("echo {ptw-end}")', 12)
+end
+
+function OnSyncLine(name, line, wildcards)
+    if not capture_sync_active then return end
+
+    local content = line:gsub("^%s+", ""):gsub("%s+$", "")
+    
+    -- 1. Ignore empty lines, tags, separators, and prompts (lines ending in >)
+    if content == "" or content:find("{ptw-") or content:find("%-%-%-%-") or content:find(">$") then 
+        return 
+    end
+
+    -- 2. Extract Count: ( 5) 
+    local count = content:match("^%(%s*(%d+)%)") or 1
+    
+    -- 3. Clean Name: Strip count from front and Level from back
+    local clean_name = content:gsub("^%(%s*%d+%)%s*", ""):gsub("%s*%(%d+%)%s*$", "")
+    
+    -- 4. Strip ONLY standard flags
+    local flags = {"%(K%)", "%(Magic%)", "%(Glow%)", "%(Hum%)", "%(Invis%)", "%(Vis%)"}
+    for _, flag in ipairs(flags) do
+        clean_name = clean_name:gsub(flag .. "%s*", "")
+    end
+    
+    -- 5. Final Normalization (using the helper function instead of .trim)
+    local final_name = normalize_potion_name(clean_name)
+    
+    if approved_potions[final_name] then
+        potion_inventory[final_name] = (potion_inventory[final_name] or 0) + tonumber(count)
+    end
+end
+
+function OnSyncComplete(name, line, wildcards)
+    -- Shutdown the capture immediately to prevent the prompt from leaking
+    capture_sync_active = false
+    EnableTrigger("potion_sync_capture", false)
+    
+    refresh_miniwindow()
+    SaveState()
+    ColourNote("cyan", "", "[PTW] Sync Complete!")
+end
 
 	
 	function OnPluginSaveState()
@@ -366,6 +510,7 @@
 	  SetVariable("order_name_first", tostring(order_name_first))
 	  SetVariable("show_usage_messages", tostring(show_usage_messages))
 	  SetVariable("hide_quaff_messages", tostring(hide_quaff_messages))
+	  SetVariable("sync_containers", "sync_containers = " .. serialize.save_simple(sync_containers))
     end
 
 
@@ -376,6 +521,8 @@
       assert(loadstring(GetVariable("potion_aliases") or ""))()
       assert(loadstring(GetVariable("color_thresholds") or ""))()
       assert(loadstring(GetVariable("approved_potions") or ""))()
+	  assert(loadstring(GetVariable("sync_containers") or ""))()
+	  sync_containers = sync_containers or {}
 
       local saved_font_size = GetVariable("font_size")
       if saved_font_size then
@@ -384,8 +531,13 @@
         font_size = 10
       end
 
-      show_untracked_messages = GetVariable("show_untracked_messages") ~= "false"
-	  order_name_first = GetVariable("order_name_first") ~= "false"
+      -- Load Boolean Settings (Defaults to False if nil)
+        show_untracked_messages = GetVariable("show_untracked_messages") == "true"
+        hide_quaff_messages     = GetVariable("hide_quaff_messages") == "true"
+    
+      -- Load Boolean Settings (Defaults to True if nil)
+        show_usage_messages     = GetVariable("show_usage_messages") ~= "false"
+        order_name_first        = GetVariable("order_name_first") ~= "false"
 
       my_window = ThemedTextWindow(
         "testpotiontrackerwindow", 200, 200, 200, 200,
@@ -962,6 +1114,11 @@ end
     HelpLine("ptw status", "Show current settings and thresholds.")
     HelpLine("ptw reset", "Clear all current tracked counts.")
     Note("")
+    ColourNote(header_col, "", "--- Inventory Sync ---")
+    HelpLine("ptw sync add <id>", "Add a bag ID to scan during sync.")
+    HelpLine("ptw sync", "Scan inventory and bags for potions.")
+    HelpLine("ptw sync clear", "Clear the list of tracked bags.")
+    Note("")
     ColourNote(header_col, "", "--- Approved List ---")
     HelpLine("ptw add <Full Name>", "Add potion to the approved list.")
     HelpLine("ptw remove <Full Name>", "Remove potion from approved list.")
@@ -1014,6 +1171,15 @@ end
     local keywordCount = 0
     for _ in pairs(potion_aliases or {}) do keywordCount = keywordCount + 1 end
 
+    -- Logic to display Sync Container IDs
+    local container_list = ""
+    local cCount = 0
+    for id, _ in pairs(sync_containers or {}) do 
+        cCount = cCount + 1 
+        container_list = container_list .. id .. " "
+    end
+    if container_list == "" then container_list = "(None)" end
+
     -- This function handles the wide spacing before the colon
     local function PrintStatusLine(label, value, value_color, prefix)
         local pre = prefix or ""
@@ -1043,6 +1209,13 @@ end
     PrintStatusLine("Untracked Msgs", show_untracked_messages and "On" or "Off", val_col)
     PrintStatusLine("Usage Msgs", show_usage_messages and "On" or "Off", val_col)
     
+    ColourNote(border_col, "", "|                                                                 |")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Sync Settings:"), border_col, "", " |")
+    
+    -- New Sync Stats
+    PrintStatusLine("Bags Tracked", cCount, count_col)
+    PrintStatusLine("Bag IDs", container_list, val_col)
+
     ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Color Thresholds:"), border_col, "", " |")
     
