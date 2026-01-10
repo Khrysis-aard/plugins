@@ -2,7 +2,7 @@
 
 A comprehensive inventory tracking and automation system for MUDs. Originally designed for potions, v1.600 now supports Scrolls, Food, Pills, Wands, and Staffs with full automation for restocking and smart-usage.
 
-## 🚀 Key Features in v1.500
+## 🚀 Key Features in v1.600
 - **Smart Usage:** One command (`ptw use <category>`) to consume the best item available.
 - **Restock Automation:** Automatically travels to shops, buys items, and returns you to your starting point.
 - **Shop Linking:** "Appraise" items to automatically save their room ID, buy keyword, and level.
