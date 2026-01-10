@@ -15,8 +15,32 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.5"
+   version="1.6"
   >
+  
+  <description trim="y">
+<![CDATA[
+============================================================================
+                     POTION TRACKER CHANGE LOG
+============================================================================
+v1.600 - MAJOR UPDATE
+----------------------------------------------------------------------------
+* NEW COMMANDS:
+  - [PTW USE]     : Smart-use items (quaff/recite/eat/brandish) by category.
+  - [PTW APPRAISE]: Link items to shops, levels, and categories.
+  - [PTW RESTOCK] : Automation to visit shops, buy, and bag items.
+  - [PTW RETURN]  : Mapper-based return to your starting location.
+  - [PTW SYNC]    : Instant inventory and container synchronization.
+
+* IMPROVEMENTS:
+  - Expanded tracking: Now supports Scrolls, Food, Pills, Wands, and Staffs.
+  - Staff/Wand Logic: Detection for dropped or newly acquired held items.
+  - Priority Logic: Support for "Super-priority" levels (> 201).
+
+* Type 'ptw help' for full command documentation.
+============================================================================
+]]>
+</description>
 </plugin>
 
     <aliases>
@@ -25,13 +49,6 @@
       enabled="y"
       regexp="y"
       script="ToggleDisplayOrder"
-    >
-    </alias>
-	<alias
-      match="^ptw kw list$"
-      enabled="y"
-      regexp="y"
-      script="ListPotionKeywords"
     >
     </alias>
 	<alias
@@ -213,10 +230,135 @@
       sequence="100"
     />
 	
+	<!-- Alias for using appraise to add potions and grab room ids -->
+	<alias
+  match="^ptw appraise (.*)$"
+  enabled="y"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  local raw_input = "%1"
+  if raw_input:lower() == "clear" then
+      potion_locations = {}
+      SetVariable("potion_locations", "potion_locations = " .. serialize.save_simple(potion_locations))
+      SaveState()
+      ColourNote("yellow", "", "[PTW] ", "white", "", "Shop data cleared.")
+      return
+  end
+
+  -- Split last word for category
+  local item, cat = raw_input:match("^(.*)%s+(%S+)$")
+  if item and cat then
+      temp_app_input = item
+      temp_app_category = cat:sub(1,1):upper() .. cat:sub(2):lower()
+  else
+      temp_app_input = raw_input
+      temp_app_category = "Uncategorized"
+  end
+
+  temp_app_name = nil
+  EnableTrigger("capture_potion_name", true)
+  EnableTrigger("capture_potion_level", true)
+  Send("appraise " .. temp_app_input)
+</send>
+</alias>
+
+	<!-- Alias for restocking potions -->
+<alias
+  match="^ptw restock (.*) (\d+)(?: (nr))?$"
+  enabled="y"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+  script="RestockPotion"
+>
+</alias>
+
+	<!-- Aliases for ptw return -->
+	
+<alias
+   match="^ptw return$"
+   enabled="y"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+>
+<send>
+  PotionReturn()
+</send>
+</alias>
+
+<alias
+   match="^ptw return clear$"
+   enabled="y"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+>
+<send>
+  restock_return_room = "-"
+  ColourNote("yellow", "", "[PTW] ", "white", "", "Return location cleared.")
+</send>
+</alias>
+
+<!-- Alias for using potions -->
+
+<alias
+   match="^ptw use (?&lt;cat&gt;\w+)(?&lt;size&gt; b| s)?$"
+   enabled="y"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+>
+<send>
+  local cat = "%&lt;cat&gt;"
+  local size = "%&lt;size&gt;"
+  
+  -- Clean up the size (remove spaces, default to 'b')
+  size = size:gsub("%%s+", "")
+  if size == "" then size = "b" end
+  
+  PotionUse(cat, size)
+</send>
+</alias>
+	
   </aliases>
 	
 	<triggers>
-    <!-- Trigger for using Sync -->
+    
+	<!-- Triggers for using ptw appraise -->
+	<trigger
+   name="capture_potion_name"
+   match="^\| Name\s+: (.*?)\s+\|$"
+   enabled="n"
+   regexp="y"
+   script="OnAppraiseName"
+   sequence="100"
+>
+</trigger>
+
+<trigger
+   name="capture_potion_level"
+   match="^\|\s+Type\s+:\s+(\w+)\s+Level\s+:\s+(\d+)\s+\|$"
+   enabled="n"
+   regexp="y"
+   script="OnAppraiseLevel"
+   sequence="100"
+>
+</trigger>
+
+<trigger
+   enabled="y"
+   match="^(.*?) does not have that item for sale\.$"
+   regexp="y"
+   script="OnAppraiseFail"
+   sequence="10"
+>
+</trigger>
+
+	<!-- Trigger for using Sync -->
 	<trigger
  match="^\{ptw-start\}$"
  enabled="y"
@@ -368,13 +510,42 @@
       regexp="y"
       sequence="4"
     />
-  </triggers>
-
+	<trigger
+      enabled="y"
+      match="^(.*) implodes after its final use\.$"
+      regexp="y"
+      script="OnStaffImplode"
+      sequence="100"
+    />
+	<trigger
+      enabled="y"
+      match="^You stop holding (.*?)\.$"
+      regexp="y"
+      script="OnStopHolding"
+      sequence="100"
+    />
+	<trigger
+      enabled="y"
+      match="^You put (.*?) (?:in|into) (.*?)\.$"
+      regexp="y"
+      script="OnPutInBag"
+      sequence="100"
+    />
+	<trigger
+      name="RestockCarryLimit"
+	  enabled="n"
+      match="^You can only carry (\d+) of those\.$"
+      regexp="y"
+      script="HandlePartialBuy"
+      sequence="100"
+    />
+</triggers>
   <script>
     <![CDATA[
 	
 	require "themed_miniwindows"
 	require "serialize"
+	require "gmcphelper"
 
     local my_window = ThemedTextWindow("testpotiontrackerwindow", 200, 200, 200, 200, "Potion Tracker", "center", false, true, true, false, false, false, false, Dina, font_size, Dina, font_size, 1000, 5, true, false)
     
@@ -386,6 +557,26 @@
 	color_thresholds = color_thresholds or { low = 4, medium = 9, high = 14 }
 	potion_aliases = potion_aliases or {}
     sync_containers = sync_containers or {}
+	potion_locations = potion_locations or {}
+	temp_app_name = nil
+    temp_app_id = nil
+	local current_restock_kw = ""
+	
+	-- Global tracker for charged items
+    needs_new_staff = true
+	needs_get_staff = (GetVariable("needs_get_staff") ~= "0")
+    needs_wear_staff = (GetVariable("needs_wear_staff") ~= "0")
+
+-- Maps the 'item_class' from appraisal to the correct MUD command
+local class_to_cmd = {
+    ["Potion"]  = "quaff",
+    ["Scroll"]  = "recite",
+    ["Pill"]    = "eat",
+    ["Food"]    = "eat",
+    ["Sustain"] = "eat",
+    ["Staff"]   = "brandish",
+    ["Wand"]    = "zap"
+}
 	
 	  -- Hide the miniwindow
 	function hide_mw()
@@ -421,18 +612,435 @@
 	  my_window:show()
     end
 
+-- New Staff/Wand functions
+
+function OnPutInBag(name, line, wildcards)
+    local raw_item = wildcards[1]
+    local bag_name = wildcards[2]
+    local normalized_item = normalize_potion_name(raw_item)
+
+    -- Check if this is an item we are actually tracking (Staff/Wand/etc)
+    if potion_inventory[normalized_item] then
+        -- 1. Flip the flags: It's in a bag, so we'll need to GET and WEAR it next time
+        needs_get_staff = true
+        needs_wear_staff = true
+        
+        -- 2. Save these states to MUSHclient memory
+        SetVariable("needs_get_staff", "1")
+        SetVariable("needs_wear_staff", "1")
+        SaveState()
+        
+        -- Optional: Debug message
+        -- ColourNote("gray", "", "[PTW] " .. normalized_item .. " put in " .. bag_name .. ". Flags reset.")
+    end
+end
+
+function OnStopHolding(name, line, wildcards)
+    local raw_name = wildcards[1]
+    local normalized_name = normalize_potion_name(raw_name)
+
+    if potion_inventory[normalized_name] then
+        needs_wear_staff = true  
+        SetVariable("needs_wear_staff", "1") -- Remember we need to wear it
+        SaveState()
+    end
+end
+
+function OnStaffImplode(name, line, wildcards)
+    local raw_name = wildcards[1]:lower()
+    
+    -- Keep your flags and variables exactly as they were
+    needs_get_staff = true
+    needs_wear_staff = true
+    SetVariable("needs_get_staff", "1")
+    SetVariable("needs_wear_staff", "1")
+
+    -- Smart Lookup: Find which tracked item is hidden inside the messy name
+    local found_name = nil
+    for tracked_name, _ in pairs(potion_inventory) do
+        if raw_name:find(tracked_name:lower(), 1, true) then
+            found_name = tracked_name
+            break
+        end
+    end
+
+    -- Now we use 'found_name' for your original logic
+    if found_name then
+        potion_inventory[found_name] = potion_inventory[found_name] - 1
+        
+        if potion_inventory[found_name] <= 0 then
+            potion_inventory[found_name] = nil
+            ColourNote("orange", "", "[PTW] " .. found_name .. " imploded. (Last one removed)")
+        else
+            ColourNote("orange", "", "[PTW] " .. found_name .. " imploded. (Remaining: " .. potion_inventory[found_name] .. ")")
+        end
+        
+        if refresh_miniwindow then refresh_miniwindow() end
+    else
+        -- If we still can't find it, we show what failed
+        ColourNote("yellow", "", "[PTW] A staff imploded (" .. wildcards[1] .. "), but it wasn't tracked.")
+    end
+    
+    SaveState() 
+end
+
+-- New using potions Functions
+
+function PotionUse(category, size)
+    -- 1. Setup variables
+    local search_cat = category:lower():gsub("^%s*(.-)%s*$", "%1")
+    
+    local prefer_high = true
+    if size and size:lower():find("s") then
+        prefer_high = false
+    end
+    
+    local matches = {}
+    local bag_id = next(sync_containers or {})
+
+    -- 2. Scan Inventory
+    for inv_name, count in pairs(potion_inventory or {}) do
+        if count > 0 then
+            local data = potion_locations[inv_name]
+            if data then
+                local raw_type = data.type or "uncategorized"
+                local stored_cat = tostring(raw_type):lower():gsub("[%[%]]", ""):gsub("^%s*(.-)%s*$", "%1")
+                
+                if stored_cat == search_cat then
+                    local lvl_str = tostring(data.level):gsub("%D", "")
+                    local lvl = tonumber(lvl_str) or 0
+                    
+                    table.insert(matches, {
+                        name = inv_name, 
+                        level = lvl,
+                        buy_kw = data.buy_kw,
+                        item_class = data.item_class -- Pull the class (Scroll/Potion/etc)
+                    })
+                end
+            end
+        end
+    end
+
+    -- 3. Sort and Execute
+    if #matches > 0 then
+        table.sort(matches, function(a, b)
+            if prefer_high then
+                return a.level > b.level
+            else
+                return a.level < b.level
+            end
+        end)
+
+        local best = matches[1]
+        local keyword = (best.buy_kw and best.buy_kw ~= "" and best.buy_kw ~= "-") and best.buy_kw or best.name
+        
+        -- NEW: Determine the correct command for this item class
+        -- We check the table we created earlier. Default to 'quaff' if missing.
+        local action = "quaff"
+        if best.item_class and class_to_cmd[best.item_class] then
+            action = class_to_cmd[best.item_class]
+        elseif best.name:lower():find("scroll") then -- Fallback for un-appraised old items
+            action = "recite"
+        end
+
+        -- 4. Execute with Bag Logic
+        if bag_id then
+            if best.item_class == "Staff" or best.item_class == "Wand" then
+                if needs_get_staff then
+                    SendNoEcho("get " .. keyword .. " " .. bag_id)
+                    needs_get_staff = false 
+                    SetVariable("needs_get_staff", "0") -- Remember we have it now
+                end
+            else
+                SendNoEcho("get " .. keyword .. " " .. bag_id)
+            end
+        end
+
+        -- 5. Wear Logic (Independent of Get)
+        if best.item_class == "Staff" or best.item_class == "Wand" then
+            if needs_wear_staff then
+                SendNoEcho("wear " .. keyword)
+                needs_wear_staff = false 
+                SetVariable("needs_wear_staff", "0") -- Remember we are wearing it
+            end
+        end
+
+        -- 6. Perform the main action
+        SendNoEcho(action .. " " .. keyword)
+        SaveState() -- Save the 'false' flags to the plugin file
+    
+        -- Feed back to note what was used (Uncomment if you want to see it)
+        -- local class_tag = best.item_class or "Item"
+        -- ColourNote("gray", "", "[PTW] " .. action:sub(1,1):upper() .. action:sub(2) .. "ing " .. (prefer_high and "BEST" or "SMALLEST") .. " " .. class_tag .. ": ", "lime", "", best.name)
+
+    else
+        Note("")
+        ColourNote("white", "red", " [PTW] No " .. category .. " items found! ")
+        Note("")
+    end
+end
+
+function OnAliasPotionUse(name, line, wildcards)
+    -- Trim the space off the size if it exists
+    local size = wildcards.size:gsub("%s+", "")
+    if size == "" then size = "b" end -- Default to big
+    
+    PotionUse(wildcards.cat, size)
+end
+
+-- New Return function
+
+function PotionReturn()
+    local current_room = gmcp("room.info.num")
+    
+    if not restock_return_room or restock_return_room == "-" then
+        ColourNote("orange", "", "[PTW] No return location saved.")
+        return
+    end
+    
+    if current_room == restock_return_room then
+        ColourNote("yellow", "", "[PTW] You are already at your starting location.")
+        restock_return_room = "-" 
+        SetVariable("restock_return_room", "-")
+        SaveState()
+        return
+    end
+
+    ColourNote("gray", "", "[PTW] ", "white", "", "Returning to original location: ", "cyan", "", tostring(restock_return_room))
+    
+    Execute("mapper goto " .. restock_return_room)
+    
+    -- Clear and Save
+    restock_return_room = "-"
+    SetVariable("restock_return_room", "-")
+    SaveState()
+end
+
+-- New Restock potion function
+
+function HandlePartialBuy(name, line, wildcards)
+    -- Turn it OFF immediately so it doesn't loop or interfere
+    EnableTrigger("RestockCarryLimit", false)
+	
+	local can_carry = tonumber(wildcards[1])
+    local bag_id = next(sync_containers or {})
+    
+    if current_restock_kw == "" or current_restock_kw == nil then
+        return -- Safety check
+    end
+
+    if can_carry > 0 then
+        ColourNote("orange", "", "[PTW] Limit reached. Buying " .. can_carry .. ".")
+        
+        -- 1. Buy what we can
+        Execute("buy " .. can_carry .. " " .. current_restock_kw)
+        
+        -- 2. Bag them
+        if bag_id then
+            Execute("put all." .. current_restock_kw .. " " .. bag_id)
+        end
+    end
+end
+
+function RestockPotion(name, line, wildcards)
+    local target_input = wildcards[1]:lower()
+    local amount = tonumber(wildcards[2]) or 1
+    -- Check if 'nr' was typed
+    local no_return = wildcards[3] and wildcards[3]:lower() == "nr"
+
+    -- 1. Setup Return Room Logic
+    if no_return then
+        ColourNote("gray", "", "[PTW] ", "orange", "", "No-Return mode: Current location will not be saved.")
+    else
+        -- ONLY save if we aren't already mid-restock (restock_return_room is empty or "-")
+        if not restock_return_room or restock_return_room == "-" or restock_return_room == "" then
+            local current_room = gmcp("room.info.num")
+            restock_return_room = current_room
+            SetVariable("restock_return_room", restock_return_room)
+            SaveState()
+            ColourNote("gray", "", "[PTW] ", "white", "", "Starting point saved. Type 'ptw return' when finished.")
+        end
+    end
+    
+    local found_potion = nil
+    local found_data = nil
+    local target_kw = nil
+    local unappraised_count = 0 -- Track if we skipped manual adds
+
+    -- 1. Get stats using your GMCP paths
+    local level = tonumber(gmcp("char.status.level")) or 1
+    local tier = tonumber(gmcp("char.base.tier")) or 0
+    local effective_lvl = level + (tier * 10) 
+
+    -- 2. Check if the input is a CATEGORY
+    local best_lvl = -1
+    local is_category = false
+
+    for p_name, data in pairs(potion_locations) do
+        if data.type and data.type:lower() == target_input then
+            is_category = true
+            
+            -- CHECK: Has this been appraised? (room shouldn't be "-")
+            if data.room ~= "-" then
+                local p_lvl = tonumber(data.level) or 0
+                
+                -- Highest level potion <= effective level
+                if p_lvl <= effective_lvl and p_lvl > best_lvl then
+                    best_lvl = p_lvl
+                    found_potion = p_name
+                    found_data = data
+                    target_kw = data.buy_kw
+                end
+            else
+                unappraised_count = unappraised_count + 1
+            end
+        end
+    end
+
+    -- 3. Fallback to Keyword search (Manual override always works)
+    if not is_category then
+        for p_name, data in pairs(potion_locations) do
+            if data.buy_kw and data.buy_kw:lower() == target_input then
+                found_potion = p_name
+                found_data = data
+                target_kw = data.buy_kw
+                best_lvl = tonumber(data.level) or 0
+                break
+            end
+        end
+    end
+
+    -- 4. Error Handling
+    if not found_data then
+        local msg = is_category 
+            and "[PTW] No appraised " .. target_input .. " potions found for Level " .. effective_lvl
+            or "[PTW] No shop saved for keyword: " .. target_input
+        ColourNote("orange", "black", msg)
+        
+        if unappraised_count > 0 then
+            ColourNote("gray", "black", "[PTW] (Note: " .. unappraised_count .. " potions in this category need to be appraised at a shop.)")
+        end
+        return
+    end
+
+    -- 5. Execution Messages (Updated to include amount here)
+    ColourNote("yellow", "black", "[PTW] ", 
+               "white", "black", "Restocking " .. target_input .. ": ", 
+               "lime", "black", found_potion .. " (L" .. best_lvl .. ")",
+               "white", "black", " x " .. amount)
+    
+    -- Safety check: If for some reason room is still "-"
+    if found_data.room == "-" then
+        ColourNote("orange", "black", "[PTW] Error: This potion has no shop location saved.")
+        return
+    end
+
+    Execute("mapper goto " .. found_data.room)
+    current_restock_kw = target_kw -- Store this for the "You can only carry" trigger
+	-- Turn the trigger ON right before we buy
+    EnableTrigger("RestockCarryLimit", true)
+	Execute("buy " .. amount .. " " .. target_kw)
+    
+	-- Turn it back OFF after 2 seconds (in case the buy was successful 
+    -- and the trigger never actually fired)
+    DoAfterSpecial(2, 'EnableTrigger("RestockCarryLimit", false)', 12)
+	
+    -- 6. Bagging Logic (Cleaned up as requested)
+    local bag_id = next(sync_containers or {})
+    if bag_id then
+        Execute("put all." .. target_kw .. " " .. bag_id)
+    else
+        ColourNote("yellow", "black", "[PTW] ", 
+                   "white", "black", "No bag ID found. Leaving " .. found_potion .. " in inventory.")
+    end
+end
+
+-- New ptw appraise command function
+
+function OnAppraiseFail(name, line, wildcards)
+    -- 1. Shut down the capture triggers
+    EnableTrigger("capture_potion_name", false)
+    EnableTrigger("capture_potion_level", false)
+    
+    -- 2. Clear your specific temp variables
+    temp_app_name = nil
+    temp_app_input = nil
+    temp_app_category = nil
+    
+    -- 3. Feedback
+    ColourNote("orange", "", "[PTW] Appraisal failed (item not for sale). Capture triggers reset.")
+end
+
+function OnAppraiseName(name, line, wildcards)
+    temp_app_name = normalize_potion_name(wildcards[1])
+    EnableTrigger("capture_potion_name", false)
+end
+
+function OnAppraiseLevel(name, line, wildcards)
+    EnableTrigger("capture_potion_level", false)
+    
+    -- Now capturing both from the same line!
+    local item_class = wildcards[1] 
+    local item_level = wildcards[2]
+    
+    local item_name = temp_app_name
+    local buy_keyword = temp_app_input
+    local item_type = temp_app_category or "Uncategorized"
+    
+    if not item_name then return end
+
+    local room_id = gmcp("room.info.num")
+    if not room_id or room_id == "" then
+        room_id = GetVariable("room_info_num") or "-"
+    end
+
+    -- Save to table
+    potion_locations = potion_locations or {}
+    potion_locations[item_name] = {
+        room = room_id,
+        buy_kw = buy_keyword, 
+        level = item_level,
+        type = item_type,       -- Your Category (Healing)
+        item_class = item_class -- Mechanical Type (Scroll)
+    }
+    
+    -- Auto-approve
+    approved_potions = approved_potions or {}
+    if not approved_potions[item_name] then
+        approved_potions[item_name] = true
+        SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
+    end
+    
+    SetVariable("potion_locations", "potion_locations = " .. serialize.save_simple(potion_locations))
+    
+    -- Success Note
+    local note_cmd = string.format(
+        'ColourNote(' ..
+        '"yellow", "", "[PTW] ", ' ..
+        '"lime",   "", "Linked: ", ' ..
+        '"white",  "", %q, ' ..
+        '"cyan",   "", " [" .. %q .. "/" .. %q .. "]", ' .. 
+        '"lime",   "", " to Room ", ' ..
+        '"white",  "", %q, ' ..
+        '"lime",   "", " Buy KW: ", ' ..
+        '"white",  "", %q, ' ..
+        '"cyan",   "", " Lvl ", ' ..
+        '"white",  "", %q)',
+        item_name, item_type, item_class, tostring(room_id), tostring(buy_keyword), tostring(item_level)
+    )
+    
+    DoAfterSpecial(0.3, note_cmd, 12)
+    SaveState()
+end
+
 -- New Sync Command Functions
 
 function AddSyncContainer(name, line, wildcards)
-    local id = wildcards[1]
-    sync_containers = sync_containers or {}
-    sync_containers[id] = true
-    
-    ColourTell("yellow", "", "[PTW] Added container ")
-    ColourTell("cyan", "", id)
-    ColourNote("yellow", "", " to sync list.")
-    
-    SaveState() -- This ensures the ID is saved to your variables
+    local id = wildcards[1]:lower()
+    sync_containers = { [id] = true } -- Creates a fresh table with just this ID
+    SetVariable("sync_containers", "sync_containers = " .. serialize.save_simple(sync_containers))
+    SaveState()
+    ColourNote("yellow", "", "[PTW] ", "white", "", "Primary bag set to: ", "cyan", "", id)
 end
 
 function DoSync()
@@ -459,38 +1067,47 @@ function DoSync()
     end
     
     -- 5. Close it out
-    DoAfterSpecial(0.5, 'SendNoEcho("echo {ptw-end}")', 12)
+    DoAfterSpecial(0.3, 'SendNoEcho("echo {ptw-end}")', 12)
 end
 
-function OnSyncLine(name, line, wildcards)
+ function OnSyncLine(name, line, wildcards)
     if not capture_sync_active then return end
 
-    local content = line:gsub("^%s+", ""):gsub("%s+$", "")
-    
-    if content == "" or content:find("{ptw-") or content:find("%-%-%-%-") or content:find(">$") then 
+    -- 1. Strip ANSI and whitespace
+    local content = line:gsub("\x1b%[[%d;]*m", "")
+    content = content:gsub("^%s+", ""):gsub("%s+$", "")
+
+    -- 2. Header/Footer check
+    -- We allow the line to pass if it contains "Wand", even if it has dashes
+    if content == "" or content:find("{ptw-") or content:find(">$") then 
         return 
     end
+    
+    if content:find("%-%-%-%-") and not content:find("Wand") then
+        return
+    end
 
-    -- 1. Extract Count
+    -- 3. Extract Count
     local count = content:match("^%(%s*(%d+)%)") or 1
-    
-    -- 2. Strip the Count from front and Level/Weight from back
+
+    -- 4. PRIORITY CHECK (For Items with Symbols like the Wand)
+    local lower_content = content:lower()
+    for approved_name, _ in pairs(approved_potions) do
+        if lower_content:find(approved_name:lower(), 1, true) then
+            potion_inventory[approved_name] = (potion_inventory[approved_name] or 0) + tonumber(count)
+            return 
+        end
+    end
+
+    -- 5. FALLBACK LOGIC (Original Potion Logic)
     local clean_name = content:gsub("^%(%s*%d+%)%s*", ""):gsub("%s*%(%d+%)%s*$", "")
-    
-    -- 3. Strip ALL clumped single-letter flags (K)(M)(G)(H) etc.
-    -- The '+' ensures it catches them all even if they are smashed together
     clean_name = clean_name:gsub("%([KMGHIVP]%)", "")
-    
-    -- 4. Strip common long-form flags
     local words_to_strip = {"%(Magic%)", "%(Glow%)", "%(Hum%)", "%(Invis%)", "%(Vis%)", "%(Artifact%)", "%(Redeemed%)"}
     for _, word in ipairs(words_to_strip) do
         clean_name = clean_name:gsub(word, "")
     end
-    
-    -- 5. Final Normalization (Trimming and A/An removal)
+    clean_name = clean_name:gsub("%[%d+/%d+%]", "")
     local final_name = normalize_potion_name(clean_name)
-    
-    -- 6. Safety Trim: Sometimes stripping flags leaves double spaces in the middle
     final_name = final_name:gsub("%s%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
 
     if approved_potions[final_name] then
@@ -520,18 +1137,22 @@ end
 	  SetVariable("show_usage_messages", tostring(show_usage_messages))
 	  SetVariable("hide_quaff_messages", tostring(hide_quaff_messages))
 	  SetVariable("sync_containers", "sync_containers = " .. serialize.save_simple(sync_containers))
+	  SetVariable("potion_locations", "potion_locations = " .. serialize.save_simple(potion_locations or {}))
+	  SetVariable("restock_return_room", restock_return_room)
     end
 
 
     function OnPluginInstall()
       ColourNote("blue", "yellow", "[Potion_tracker] Plugin Installed!")
-
+      
       assert(loadstring(GetVariable("potion_inventory") or ""))()
       assert(loadstring(GetVariable("potion_aliases") or ""))()
       assert(loadstring(GetVariable("color_thresholds") or ""))()
       assert(loadstring(GetVariable("approved_potions") or ""))()
 	  assert(loadstring(GetVariable("sync_containers") or ""))()
+	  assert(loadstring(GetVariable("potion_locations") or "potion_locations = {}"))()
 	  sync_containers = sync_containers or {}
+	  restock_return_room = GetVariable("restock_return_room") or "-"
 
       local saved_font_size = GetVariable("font_size")
       if saved_font_size then
@@ -555,10 +1176,14 @@ end
         Dina, font_size, Dina, font_size,
         1000, 5, true, false
       )
+	  
+	  -- Display the new Change Log from the description tag
+      Note("")
+      ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+      Note("")
 
       show_mw()
       refresh_miniwindow()
-      ShowHelp()
     end
 	
 	function ToggleQuietMode(name, line, wildcards)
@@ -619,51 +1244,6 @@ end
     end
 
     -- Keyword functions
-	
-	function ListPotionKeywords()
-    local header_col = "cyan"
-    local name_col = "white"
-    local arrow_col = "gray"
-    local kw_col = "yellow"
-    local border_col = "mediumblue"
-    
-     Note("")
-     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Potion Keyword Mappings"), border_col, "", " |")
-     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    
-    local any = false
-    -- Sorting helps find things faster
-    local sorted_potions = {}
-    for potion in pairs(potion_aliases) do table.insert(sorted_potions, potion) end
-    table.sort(sorted_potions)
-
-    for _, potion in ipairs(sorted_potions) do
-        local keyword = potion_aliases[potion]
-        
-        -- Calculate padding manually to handle multiple colors in one line
-        local name_part = string.sub(potion, 1, 35)
-        local arrow_part = " => "
-        local kw_part = keyword
-        
-        local line_len = string.len(name_part) + string.len(arrow_part) + string.len(kw_part)
-        local padding = string.rep(" ", math.max(0, 63 - line_len))
-
-        ColourNote(border_col, "", "| ", 
-                   name_col, "", string.format("%-35s", name_part), 
-                   arrow_col, "", arrow_part, 
-                   kw_col, "", kw_part .. padding, 
-                   border_col, "", " |")
-        any = true
-    end
-
-    if not any then
-        ColourNote(border_col, "", "| ", "gray", "", string.format("%-63s", "  (No keywords assigned)"), border_col, "", " |")
-    end
-
-    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    Note("")
-end
 
 	function SetPotionAlias(name, line, wildcards)
       local full_name = normalize_potion_name(wildcards[1])
@@ -711,73 +1291,202 @@ end
 
 	
 	function AddApprovedPotion(name, line, wildcards)
-      local potion = normalize_potion_name(wildcards[1])
-      approved_potions[potion] = true
-      SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
-      Note("Added '" .. potion .. "' to approved potions list.")
+    local potion = normalize_potion_name(wildcards[1])
+    
+    -- 1. Get Category
+    local msg_cat = "Enter CATEGORY for '" .. potion .. "'\n(e.g., Healing, Mana, Utility)"
+    local category = utils.inputbox(msg_cat, "PTW Category Assignment", "Uncategorized")
+    if not category then return end
+    category = category:match("^%s*(.-)%s*$")
+    category = (category == "") and "Uncategorized" or (category:sub(1,1):upper() .. category:sub(2):lower())
+
+    -- 2. Get Class
+    local msg_class = "Enter ITEM CLASS for '" .. potion .. "'\n(Must match one of these Potion, Scroll, Pill, Food, Wand, Staff)"
+    local item_class = utils.inputbox(msg_class, "PTW Class Assignment", "Potion")
+    if not item_class then return end
+    item_class = item_class:match("^%s*(.-)%s*$")
+    item_class = (item_class == "") and "Potion" or (item_class:sub(1,1):upper() .. item_class:sub(2):lower())
+
+    -- 3. Get Buy/Use Keyword
+    local msg_kw = "Enter the KEYWORD used to identify this item.\n\n" ..
+                   "This is the word the plugin will use with commands to use or buy more if it has a roomid.\n" ..
+                   "Example: If you enter 'incomplete', PTW will send 'recite incomplete'.\n" ..
+                   "(Leave blank for '-')"
+    local b_kw = utils.inputbox(msg_kw, "PTW Keyword Assignment", "")
+    if not b_kw then return end
+    b_kw = b_kw:match("^%s*(.-)%s*$")
+    if b_kw == "" then b_kw = "-" end
+
+    -- 4. Get Level
+    local msg_lvl = "Enter ITEM LEVEL for priority.\n\n" ..
+                   "PTW uses 'Best' (highest level) first.\n" ..
+                   "HINT: You can enter a level higher than 201 (e.g., 202)\n" ..
+                   "to force this item to be used before everything else.\n" ..
+                   "(Leave blank for 0)"
+    local lvl_input = utils.inputbox(msg_lvl, "PTW Level/Priority Assignment", "0")
+    if not lvl_input then return end
+    local item_level = tonumber(lvl_input) or 0
+
+    -- 5. Save Approval
+    approved_potions[potion] = true
+    SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
+    
+    -- 6. Save Location Data with Fallbacks
+    potion_locations = potion_locations or {}
+    potion_locations[potion] = {
+        type = category, 
+        item_class = item_class,
+        room = "-",
+        buy_kw = b_kw,
+        level = item_level
+    }
+    SetVariable("potion_locations", "potion_locations = " .. serialize.save_simple(potion_locations))
+
+    ColourNote("yellow", "", "[PTW] ", 
+               "white",  "", "Added '", 
+               "lime",   "", potion, 
+               "white",  "", "' to category: ", 
+               "cyan",   "", category,
+               "white",  "", " (Class: " .. item_class .. ")")
+    
+    if item_level > 201 then
+        ColourNote("yellow", "", "[PTW] ", "orange", "", "Priority set to " .. item_level .. " (Super-priority).")
     end
+    
+    SaveState()
+end
 	
 	function ListApprovedPotions()
     local header_col = "cyan"
-    local num_col    = "gray"
     local name_col   = "lime"
-    local tag_col    = "yellow"
+    local kw_col     = "yellow"
     local border_col = "mediumblue"
+    local cat_tag_col = "cyan"
     
-    Note("")
-    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Approved Potions List"), border_col, "", " |")
-    ColourNote(border_col, "", "| ", "gray", "", string.format("%-63s", "  #   Status   Potion Name"), border_col, "", " |")
-    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    
-    local any = false
-    local sorted_names = {}
-    for name in pairs(approved_potions) do table.insert(sorted_names, name) end
-    table.sort(sorted_names)
+    -- Individual Info Colors
+    local room_col   = "silver"
+    local buy_col    = "white"
+    local lvl_col    = "cyan"
+    local pipe_col   = "silver" -- Color for the internal | separators
 
-    for i, name in ipairs(sorted_names) do
-        local has_kw = potion_aliases[name] and "[K]" or "   "
-        local display_name = name
+    local w_name = 40 
+    local w_kw   = 20
+    
+    -- 1. Organize into buckets
+    local buckets = {}
+    local sorted_cats = {}
+
+    for name in pairs(approved_potions) do
+        local data = potion_locations[name]
+        local cat = (data and data.type) or "Uncategorized"
         
-        -- Truncate name if it's too long to fit the row
-        if string.len(display_name) > 48 then
-            display_name = string.sub(display_name, 1, 45) .. "..."
+        if not buckets[cat] then 
+            buckets[cat] = {} 
+            table.insert(sorted_cats, cat)
         end
 
-        -- Construct the row
-        -- Format: "  1  [K]  A sparkly healing potion"
-        local row_start = string.format(" %2d  ", i)
-        local tag_part  = string.format("%-8s", has_kw)
-        local line_text = row_start .. tag_part .. display_name
-        local padding   = string.rep(" ", math.max(0, 63 - string.len(line_text)))
-
-        ColourNote(border_col, "", "| ", 
-                   num_col, "", row_start,
-                   tag_col, "", tag_part,
-                   name_col, "", display_name .. padding, 
-                   border_col, "", " |")
-        any = true
+        table.insert(buckets[cat], {
+            name = name,
+            alias = potion_aliases[name] or "-",
+            room = (data and tostring(data.room)) or "-",
+            buy_kw = (data and tostring(data.buy_kw)) or "-",
+            level = tonumber((data and data.level)) or 0
+        })
     end
 
-    if not any then
-        ColourNote(border_col, "", "| ", "gray", "", string.format("%-63s", "  (None)"), border_col, "", " |")
+    table.sort(sorted_cats, function(a, b)
+        if a == "Uncategorized" then return false end
+        if b == "Uncategorized" then return true end
+        return a < b
+    end)
+
+    Note("")
+    ColourNote(border_col, "", "+-------------------------------------------------------------------------------------------------+")
+    
+    local h_line = string.format("%-40s %-20s Room  | Buy KW     | Lvl          ", "Potion Name", "Keyword")
+    ColourTell(border_col, "", "| ")
+    ColourTell(header_col, "", h_line)
+    ColourNote(border_col, "", "|")
+    
+    ColourNote(border_col, "", "+-------------------------------------------------------------------------------------------------+")
+
+    local total_count = 0
+    for _, cat_name in ipairs(sorted_cats) do
+        local items = buckets[cat_name]
+        table.sort(items, function(a, b) return a.level > b.level end)
+
+        local cat_tag = "[" .. cat_name:upper() .. "]"
+        ColourTell(border_col, "", "| ")
+        ColourTell(cat_tag_col, "", string.format("%-96s", cat_tag))
+        ColourNote(border_col, "", "|")
+
+        for _, p in ipairs(items) do
+            total_count = total_count + 1
+            
+            local d_name = (p.name:len() > w_name) and (p.name:sub(1, w_name-3).."...") or string.format("%-"..w_name.."s", p.name)
+            local d_kw   = (p.alias:len() > w_kw) and (p.alias:sub(1, w_kw)) or string.format("%-"..w_kw.."s", p.alias)
+            local lvl_str = (p.level > 0) and ("L" .. p.level) or "L?"
+
+            -- Start Line
+            ColourTell(border_col, "", "| ")
+            
+            -- Potion Name (Lime)
+            ColourTell(name_col, "", d_name)
+            ColourTell("white", "", " ")
+            
+            -- Alias (Yellow)
+            ColourTell(kw_col, "", d_kw)
+            ColourTell("white", "", " ")
+            
+            -- Room (Silver)
+            ColourTell(room_col, "", string.format("%-6s", p.room:sub(1,6)))
+            ColourTell(pipe_col, "", "| ")
+            
+            -- Buy Keyword (White)
+            ColourTell(buy_col, "", string.format("%-11s", p.buy_kw:sub(1,11)))
+            ColourTell(pipe_col, "", "| ")
+            
+            -- Level (Cyan)
+            ColourTell(lvl_col, "", string.format("%-13s", lvl_str:sub(1,13)))
+            
+            -- End Line
+            ColourNote(border_col, "", "|") 
+        end
+        
+        ColourNote(border_col, "", "|                                                                                                 |")
     end
 
-    ColourNote(border_col, "", "+-----------------------------------------------------------------+")
-    ColourNote("gray", "", "  [K] = Keyword/Shortname assigned")
+    ColourNote(border_col, "", "|-------------------------------------------------------------------------------------------------|")
+    
+    local count_val = tostring(total_count)
+    local footer_text = string.format("Total Potions: %-75s", count_val)
+    
+    ColourTell(border_col, "", "| ")
+    ColourTell("yellow", "", "[PTW] ")
+    ColourTell("lime", "", footer_text)
+    ColourNote(border_col, "", "|")
+    
+    ColourNote(border_col, "", "+-------------------------------------------------------------------------------------------------+")
     Note("")
 end
 
 	function RemoveApprovedPotion(name, line, wildcards)
-      local potion = normalize_potion_name(wildcards[1])
-      if approved_potions[potion] then
-        approved_potions[potion] = nil
-        SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
-        Note("Removed '" .. potion .. "' from approved list.")
-      else
-        Note("Potion not in approved list: " .. potion)
-      end
-    end
+  local potion = normalize_potion_name(wildcards[1])
+  if approved_potions[potion] then
+    approved_potions[potion] = nil
+    
+    -- Clear the location table for the specific potion also
+    potion_locations[potion] = nil 
+    
+    SetVariable("approved_potions", "approved_potions = " .. serialize.save_simple(approved_potions))
+    -- AND ADD THIS LINE to save the location removal:
+    SetVariable("potion_locations", "potion_locations = " .. serialize.save_simple(potion_locations))
+    
+    Note("Removed '" .. potion .. "' from approved list and cleared its shop location.")
+  else
+    Note("Potion not in approved list: " .. potion)
+  end
+end
 
 	
 	function normalize_potion_name(name)
@@ -943,7 +1652,8 @@ end
     refresh_miniwindow()
 end
 	
-	function OnReceivePotion(name, line, wildcards)
+	  function OnReceivePotion(name, line, wildcards)
+
       local count = tonumber(wildcards[1])
       local raw_name = wildcards[2]
       local potion = normalize_potion_name(raw_name)
@@ -954,65 +1664,94 @@ end
         end
         return
       end
-
+	  
       potion_inventory[potion] = (potion_inventory[potion] or 0) + count
       Note("Received " .. count .. " of " .. potion .. ". Total: " .. potion_inventory[potion])
       refresh_miniwindow()
     end
 
     function OnGivePotion(name, line, wildcards)
-      local count = tonumber(wildcards[1])
-      local raw_name = wildcards[2]
-      local potion = normalize_potion_name(raw_name)
+    local count = tonumber(wildcards[1])
+    local raw_name = wildcards[2]
+    local potion = normalize_potion_name(raw_name)
 
-      if not approved_potions[potion] then
+    if not approved_potions[potion] then
         if show_untracked_messages then
-          Note("Gave unapproved potion: " .. potion)
+            Note("Gave unapproved item: " .. potion)
         end
         return
-      end
-
-      if potion_inventory[potion] then
-        potion_inventory[potion] = potion_inventory[potion] - count
-        if potion_inventory[potion] <= 0 then
-          potion_inventory[potion] = nil
-          Note("Gave away last of " .. potion .. ". Removed from inventory.")
-        else
-          Note("Gave away " .. count .. " of " .. potion .. ". Remaining: " .. potion_inventory[potion])
-        end
-        refresh_miniwindow()
-      else
-        Note("Tried to give untracked potion: " .. potion)
-      end
     end
+
+    if potion_inventory[potion] then
+        potion_inventory[potion] = potion_inventory[potion] - count
+
+        -- Safety check for Staffs/Wands
+        local data = potion_locations[potion]
+        if data and type(data) == "table" then
+            if data.item_class == "Staff" or data.item_class == "Wand" then
+                -- It's gone! Reset the flags and save them
+                needs_get_staff = true
+                needs_wear_staff = true
+                SetVariable("needs_get_staff", "1")
+                SetVariable("needs_wear_staff", "1")
+            end
+        end
+
+        if potion_inventory[potion] <= 0 then
+            potion_inventory[potion] = nil
+            Note("Gave away last of " .. potion .. ". Removed from inventory.")
+        else
+            Note("Gave away " .. count .. " of " .. potion .. ". Remaining: " .. potion_inventory[potion])
+        end
+        
+        refresh_miniwindow()
+    else
+        Note("Tried to give untracked potion: " .. potion)
+    end
+    
+    SaveState()
+end
 
     function OnDropPotion(name, line, wildcards)
-      local amount = tonumber(wildcards[1])
-      local raw_name = wildcards[2]
-      local potion_name = normalize_potion_name(raw_name)
+    local amount = tonumber(wildcards[1])
+    local raw_name = wildcards[2]
+    local potion_name = normalize_potion_name(raw_name)
 
-      if not approved_potions[potion_name] then
+    if not approved_potions[potion_name] then
         if show_untracked_messages then
-          Note("Ignoring unapproved item: " .. potion_name)
+            Note("Ignoring unapproved item: " .. potion_name)
         end
         return
-      end
+    end
 
-      if potion_inventory[potion_name] then
+    if potion_inventory[potion_name] then
         potion_inventory[potion_name] = potion_inventory[potion_name] - amount
 
-        if potion_inventory[potion_name] <= 0 then
-          potion_inventory[potion_name] = nil
-          Note("Dropped last of " .. potion_name .. ". Removed from inventory.")
-        else
-          Note("Dropped " .. amount .. " of " .. potion_name .. ". Remaining: " .. potion_inventory[potion_name])
+        -- FIXED LOGIC: Check if it's a staff/wand safely
+        -- We check potion_locations because we know it holds the 'item_class' table
+        local data = potion_locations[potion_name]
+        if data and type(data) == "table" then
+            if data.item_class == "Staff" or data.item_class == "Wand" then
+                needs_get_staff = true
+                needs_wear_staff = true
+                SetVariable("needs_get_staff", "1")
+                SetVariable("needs_wear_staff", "1")
+            end
         end
-      else
-        Note("Dropped untracked potion: " .. potion_name)
-      end
 
-      refresh_miniwindow()
+        if potion_inventory[potion_name] <= 0 then
+            potion_inventory[potion_name] = nil
+            Note("Dropped last of " .. potion_name .. ". Removed from inventory.")
+        else
+            Note("Dropped " .. amount .. " of " .. potion_name .. ". Remaining: " .. potion_inventory[potion_name])
+        end
+    else
+        Note("Dropped untracked potion: " .. potion_name)
     end
+
+    refresh_miniwindow()
+    SaveState()
+end
 
     function OnGetPotion(name, line, wildcards)
       local amount = tonumber(wildcards[1])
@@ -1027,8 +1766,20 @@ end
       end
 
       potion_inventory[potion_name] = (potion_inventory[potion_name] or 0) + amount
+
+      -- Clear the "needs_get" flag if we just picked up a Staff/Wand
+      local data = potion_locations[potion_name]
+      if data and type(data) == "table" then
+          if data.item_class == "Staff" or data.item_class == "Wand" then
+              needs_get_staff = false
+              SetVariable("needs_get_staff", "0")
+              -- Note: we keep needs_wear_staff as true so you actually equip it
+          end
+      end
+
       Note("Picked up " .. amount .. " of " .. potion_name .. ". Total: " .. potion_inventory[potion_name])
       refresh_miniwindow()
+      SaveState()
     end
 	
     function OnReceiveSinglePotion(name, line, wildcards)
@@ -1115,29 +1866,47 @@ end
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
     
     local function HelpLine(cmd, desc)
-        ColourNote(command_col, "", string.format(" %-24s ", cmd), desc_col, "", "- " .. desc)
+        ColourNote(command_col, "", string.format(" %-27s ", cmd), desc_col, "", "- " .. desc)
     end
 
     Note("")
     HelpLine("ptw show | hide", "Toggle the miniwindow visibility.")
     HelpLine("ptw status", "Show current settings and thresholds.")
-    HelpLine("ptw reset", "Clear all current tracked counts.")
+    HelpLine("ptw reset", "Clear miniwindow of tracked items.")
+	Note("")
+    ColourNote(header_col, "", "--- Potion Usage ---")
+    HelpLine("ptw use <category>", "Quaff/recite/brandish/eat highest level item in that category.")
+    HelpLine("ptw use <category> [b|s]", "Use best (b) or smallest (s) item.")
+    ColourNote("gray", "", "                         Example: 'ptw use healing' or 'ptw use mana s' Decides command needed quaff/recite/brandish/eat")
     Note("")
-    ColourNote(header_col, "", "--- Inventory Sync ---")
-    HelpLine("ptw sync add <id>", "Add a bag ID to scan during sync.")
-    HelpLine("ptw sync", "Scan inventory and bags for potions.")
-    HelpLine("ptw sync clear", "Clear the list of tracked bags.")
-    Note("")
-    ColourNote(header_col, "", "--- Approved List ---")
-    HelpLine("ptw add <Full Name>", "Add potion to the approved list.")
+    ColourNote(header_col, "", "--- Inventory Sync and Restock ---")
+    HelpLine("ptw sync add <id>", "Set the bag ID to scan for your items.")
+    HelpLine("ptw sync", "Scan inventory and bag for potions.")
+    HelpLine("ptw sync clear", "Clear the tracked bag ID.")
+    HelpLine("ptw restock <Cat|BuyKW> <#> [nr]", "Goes to shop, buys #, and bags. Saves return loc unless 'nr' is used.")
+    ColourNote("orange", "", "                       (!) NEEDS RoomID to work. You can force overbuy to buy MAX.")
+	ColourNote("orange", "", "                       Smart: Category uses best potion for your Level/Tier   Manual: Use Buy KW from ptw list")
+    HelpLine("ptw return", "Use mapper to return to your starting point.")
+    HelpLine("ptw return clear", "Manually wipe the saved return location.")
+	Note("")
+    ColourNote(header_col, "", "--- Approved List & Locations ---")
+    HelpLine("ptw add <Full Name>", "Add potion manually (prompts for category, Buy KW, and Level.")
+    ColourNote("orange", "", "                       Note: The Buy KW is what you would use to consume the scroll/potion/etc.")
+	ColourNote(hint_col, "", "                        Example: (Seekers) Potion of Lotus Bud  BuyKW: bud")
+	ColourNote("orange", "", "                       Can only use single-word categories, e.g., 'Healing'")
+    ColourNote("orange", "", "                       Manually added items cannot be restocked until ptw appraise is done to get a roomID.")
     HelpLine("ptw remove <Full Name>", "Remove potion from approved list.")
-    HelpLine("ptw list", "Show all approved potion names.")
+    HelpLine("ptw list", "Show approved potions, keywords, rooms, and Buy KW.") 
+    HelpLine("ptw appraise <item> [cat]", "Appraise and Link to a shop/category.")
+    ColourNote("orange", "", "                       Use one word for [cat], e.g., 'Mana' or 'Utility'")
+    ColourNote("orange", "", "                       Providing [cat] buckets the potion for smart restock. No [cat] defaults to 'Uncategorized'.")
+    ColourNote("orange", "", "                       Saves: Room, Buy KW, Level, Cat, and Auto-Approves")
+	HelpLine("ptw appraise clear", "Wipe all saved shop locations, Buy Kw, and Level.")
     HelpLine("ptw set <Full Name> <#>", "Manually set a potion count.")
     Note("")
     ColourNote(header_col, "", "--- Keywords (Short Names) ---")
     HelpLine("ptw kw add <Full Name> <kw>", "Assign a short keyword for window.")
     HelpLine("ptw kw remove <Full Name>", "Remove keyword for a potion.")
-    HelpLine("ptw kw list", "Show all keyword assignments.")
     Note("")
     ColourNote(header_col, "", "--- Configuration & Colors ---")
     HelpLine("ptw order", "Toggle Name:Count or Count:Name.")
@@ -1146,13 +1915,13 @@ end
     HelpLine("ptw untracked <on|off>", "Toggle notices for unapproved items.")
     HelpLine("ptw usage <on|off>", "Toggle colored feedback when using.")
     HelpLine("ptw color reset", "Reset colors to 4, 9, 14.")
-    HelpLine("ptw color <L> <M> <H>", "Set custom color thresholds.")
-    
-    -- Color Threshold Explanation
-    ColourNote(hint_col, "", "      Example: 'ptw color 3 7 12' results in:")
-    ColourNote(hint_col, "", "      Red: 0-3 | Mag: 4-7 | Yel: 8-12 | Grn: 13+")
-    
-    Note("")
+	HelpLine("ptw color <L> <M> <H>", "Set custom color thresholds.")
+	
+	 -- Color Threshold Explanation
+    ColourNote(hint_col, "", "                               Example: 'ptw color 3 7 12' results in:")
+    ColourNote(hint_col, "", "                               Red: 0-3 | Mag: 4-7 | Yel: 8-12 | Grn: 13+")
+	
+	 Note("")
     ColourNote(header_col, "", "--- Plugin Updates ---")
     HelpLine("ptw update check", "Check GitHub for a newer version.")
     HelpLine("ptw update install", "Download and install latest version.")
@@ -1180,14 +1949,25 @@ end
     local keywordCount = 0
     for _ in pairs(potion_aliases or {}) do keywordCount = keywordCount + 1 end
 
-    -- Logic to display Sync Container IDs
-    local container_list = ""
-    local cCount = 0
-    for id, _ in pairs(sync_containers or {}) do 
-        cCount = cCount + 1 
-        container_list = container_list .. id .. " "
+    -- NEW: Count potions that have shop data linked
+    local restockReadyCount = 0
+    for _, data in pairs(potion_locations or {}) do
+        if data.room and data.room ~= "-" then
+            restockReadyCount = restockReadyCount + 1
+        end
     end
-    if container_list == "" then container_list = "(None)" end
+
+    -- NEW: Handle Return Point logic for display
+    local return_loc = (not restock_return_room or restock_return_room == "-") and "(None)" or restock_return_room
+
+    -- Logic to display Sync Container ID
+    local primary_bag = "(None)"
+    if sync_containers then
+        local id = next(sync_containers) 
+        if id then
+            primary_bag = id
+        end
+    end
 
     -- This function handles the wide spacing before the colon
     local function PrintStatusLine(label, value, value_color, prefix)
@@ -1219,11 +1999,12 @@ end
     PrintStatusLine("Usage Msgs", show_usage_messages and "On" or "Off", val_col)
     
     ColourNote(border_col, "", "|                                                                 |")
-    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Sync Settings:"), border_col, "", " |")
+    ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Sync & Restock Settings:"), border_col, "", " |")
     
-    -- New Sync Stats
-    PrintStatusLine("Bags Tracked", cCount, count_col)
-    PrintStatusLine("Bag IDs", container_list, val_col)
+    -- Sync Stats
+    PrintStatusLine("Primary Bag ID", primary_bag, val_col)
+    PrintStatusLine("Restock-Ready", restockReadyCount, val_col)
+    PrintStatusLine("Return Point", return_loc, val_col) -- Added here
 
     ColourNote(border_col, "", "|                                                                 |")
     ColourNote(border_col, "", "| ", header_col, "", string.format("%-63s", "Color Thresholds:"), border_col, "", " |")
@@ -1252,7 +2033,7 @@ end
 require("async")
 json = require("json")
 
- plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Potion_tracker.xml"
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Potion%20Tracker/Potion_tracker.xml"
  SetVariable("DownloadURL", plugin_url)
  plugin_protocol = "HTTPS"
  plugin_prefix = "[Potion_tracker]"
@@ -1356,3 +2137,5 @@ json = require("json")
     ]]>
   </script>
 </muclient>
+
+
