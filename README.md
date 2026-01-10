@@ -95,7 +95,7 @@
 
   | Feature | Image Preview |
   | :--- | :--- |
-  | **PTW & KW Lists** | ![Lists](./assets/ptwimage1.png) |
+  | **PTW List** | ![Lists](./assets/ptwimage1.png) |
   | **PTW Status** | ![Status](./assets/ptwimage2.png) |
   | **PTW Window** | ![Window](./assets/ptwimage3.png) |
 
