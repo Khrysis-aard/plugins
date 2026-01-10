@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.5"
+   version="1.6"
   >
   
   <description trim="y">
@@ -23,7 +23,7 @@
 ============================================================================
                      POTION TRACKER CHANGE LOG
 ============================================================================
-v1.500 - MAJOR UPDATE
+v1.600 - MAJOR UPDATE
 ----------------------------------------------------------------------------
 * NEW COMMANDS:
   - [PTW USE]     : Smart-use items (quaff/recite/eat/brandish) by category.
@@ -2137,3 +2137,4 @@ json = require("json")
     ]]>
   </script>
 </muclient>
+
