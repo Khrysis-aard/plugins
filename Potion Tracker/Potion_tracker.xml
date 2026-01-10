@@ -2033,7 +2033,7 @@ end
 require("async")
 json = require("json")
 
- plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Potion_tracker.xml"
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Potion%20Tracker/Potion_tracker.xml"
  SetVariable("DownloadURL", plugin_url)
  plugin_protocol = "HTTPS"
  plugin_prefix = "[Potion_tracker]"
@@ -2137,4 +2137,5 @@ json = require("json")
     ]]>
   </script>
 </muclient>
+
 
