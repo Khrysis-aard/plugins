@@ -1,6 +1,6 @@
 # Potion Tracker (PTW) for MUSHclient
 
-A comprehensive inventory tracking and automation system for MUDs. Originally designed for potions, v1.61 now supports Scrolls, Food, Pills, Wands, and Staffs with full automation for restocking and smart-usage.
+A comprehensive inventory tracking and automation system for Aardwolf MUD. Originally designed for potions, v1.61 now supports Scrolls, Food, Pills, Wands, and Staffs with full automation for restocking and smart-usage.
 
 ## 🚀 Key Features
 - **Smart Usage:** One command (`ptw use <category>`) to consume the best item available.
