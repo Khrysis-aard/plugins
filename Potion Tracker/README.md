@@ -1,13 +1,14 @@
 # Potion Tracker (PTW) for MUSHclient
 
-A comprehensive inventory tracking and automation system for MUDs. Originally designed for potions, v1.600 now supports Scrolls, Food, Pills, Wands, and Staffs with full automation for restocking and smart-usage.
+A comprehensive inventory tracking and automation system for MUDs. Originally designed for potions, v1.61 now supports Scrolls, Food, Pills, Wands, and Staffs with full automation for restocking and smart-usage.
 
-## 🚀 Key Features in v1.600
+## 🚀 Key Features
 - **Smart Usage:** One command (`ptw use <category>`) to consume the best item available.
+- **Targeting Support:** Support for optional targets (e.g., `ptw use attack spider`) for Wands, Staffs, and Scrolls.
 - **Restock Automation:** Automatically travels to shops, buys items, and returns you to your starting point.
 - **Shop Linking:** "Appraise" items to automatically save their room ID, buy keyword, and level.
 - **Inventory Sync:** Instantly syncs your window counts with your actual inventory and bags.
-- **Held Item Logic:** Detects if you drop or give away a Staff/Wand you were currently holding.
+- **Held Item Logic:** Automatically handles `wear` commands for Wands/Staffs and detects if they are dropped or given away.
 
 ## 📥 Installation
 1. Download the `Potion_tracker.xml` file.
@@ -21,7 +22,7 @@ A comprehensive inventory tracking and automation system for MUDs. Originally de
 | `ptw help` | View the full in-game help file. |
 | `ptw appraise <item> <cat>` | Link an item to a shop and category (e.g., `mana`). |
 | `ptw restock <cat> <#>` | Go buy a specific amount of items from the linked shop. |
-| `ptw use <cat>` | Quaff/Recite/Eat the best item in that category. |
+| `ptw use <cat> [b/s] [tar]` | Use best (b) or small (s) item. Optional: **[tar]** for Wands/Scrolls. |
 | `ptw sync` | Manually sync window counts with your bags. |
 | `ptw list` | Display your database of approved items and shop locations. |
 
@@ -31,4 +32,4 @@ A comprehensive inventory tracking and automation system for MUDs. Originally de
 - `ptw quiet <on/off>`: Toggle silencing of "You quaff..." messages.
 
 ---
-*Developed for Aardwolf MUD / MUSHclient.*
+*Developed for Aardwolf MUD / MUSHclient. Version 1.61*
