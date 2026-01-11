@@ -15,14 +15,24 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.6"
+   version="1.61"
   >
   
   <description trim="y">
 <![CDATA[
 ============================================================================
-                     POTION TRACKER CHANGE LOG
+                    POTION TRACKER CHANGE LOG
 ============================================================================
+v1.61 - TARGETING UPDATE
+----------------------------------------------------------------------------
+* IMPROVEMENTS:
+  - Targeted Use: 'ptw use' now supports optional targets for Wands, 
+    Staffs, and Scrolls (e.g., 'ptw use attack spider').
+  - Smarter Syntax: Automatically detects held items to use efficient 
+    MUD commands like 'zap <target>' or 'brandish'.
+  - Bug Fixes: Resolved sync issues for items containing dashes or 
+    special symbols (like the Conductor's Wand).
+
 v1.600 - MAJOR UPDATE
 ----------------------------------------------------------------------------
 * NEW COMMANDS:
@@ -306,7 +316,7 @@ v1.600 - MAJOR UPDATE
 <!-- Alias for using potions -->
 
 <alias
-   match="^ptw use (?&lt;cat&gt;\w+)(?&lt;size&gt; b| s)?$"
+   match="^ptw use (?&lt;cat&gt;\w+)(?&lt;size&gt; b| s)?(?&lt;tar&gt; .*)?$"
    enabled="y"
    regexp="y"
    send_to="12"
@@ -315,12 +325,16 @@ v1.600 - MAJOR UPDATE
 <send>
   local cat = "%&lt;cat&gt;"
   local size = "%&lt;size&gt;"
+  local target = "%&lt;tar&gt;"
   
-  -- Clean up the size (remove spaces, default to 'b')
+  -- Clean up size
   size = size:gsub("%%s+", "")
   if size == "" then size = "b" end
   
-  PotionUse(cat, size)
+  -- Clean up target (remove leading space)
+  target = target:gsub("^%s+", "")
+  
+  PotionUse(cat, size, target)
 </send>
 </alias>
 	
@@ -686,7 +700,7 @@ end
 
 -- New using potions Functions
 
-function PotionUse(category, size)
+function PotionUse(category, size, target)
     -- 1. Setup variables
     local search_cat = category:lower():gsub("^%s*(.-)%s*$", "%1")
     
@@ -765,13 +779,35 @@ function PotionUse(category, size)
             end
         end
 
-        -- 6. Perform the main action
-        SendNoEcho(action .. " " .. keyword)
-        SaveState() -- Save the 'false' flags to the plugin file
-    
-        -- Feed back to note what was used (Uncomment if you want to see it)
-        -- local class_tag = best.item_class or "Item"
-        -- ColourNote("gray", "", "[PTW] " .. action:sub(1,1):upper() .. action:sub(2) .. "ing " .. (prefer_high and "BEST" or "SMALLEST") .. " " .. class_tag .. ": ", "lime", "", best.name)
+       -- 6. Perform the main action (Aardwolf Held-Item Style)
+        local has_target = (target and target ~= "")
+        local item_class = best.item_class or "Potion"
+        local final_cmd = ""
+
+        if has_target then
+            if item_class == "Wand" then
+                -- Since Section 5 wears it, we just zap the target
+                final_cmd = "zap " .. target
+            elseif item_class == "Staff" then
+                -- Staffs affect the whole room, usually just 'brandish'
+                final_cmd = "brandish"
+            elseif item_class == "Scroll" then
+                -- Scrolls still need: recite <scroll> <target>
+                final_cmd = "recite " .. keyword .. " " .. target
+            else
+                -- Potions, Pills, etc.
+                final_cmd = action .. " " .. keyword
+            end
+        else
+            -- No target provided (Standard use)
+            final_cmd = action .. " " .. keyword
+        end
+
+        -- DEBUG: Keep this until you're happy with the results!
+        -- ColourNote("yellow", "", "[PTW DEBUG] Sending command: ", "white", "", final_cmd)
+
+        SendNoEcho(final_cmd)
+        SaveState()
 
     else
         Note("")
@@ -1874,10 +1910,12 @@ end
     HelpLine("ptw status", "Show current settings and thresholds.")
     HelpLine("ptw reset", "Clear miniwindow of tracked items.")
 	Note("")
-    ColourNote(header_col, "", "--- Potion Usage ---")
-    HelpLine("ptw use <category>", "Quaff/recite/brandish/eat highest level item in that category.")
-    HelpLine("ptw use <category> [b|s]", "Use best (b) or smallest (s) item.")
-    ColourNote("gray", "", "                         Example: 'ptw use healing' or 'ptw use mana s' Decides command needed quaff/recite/brandish/eat")
+    ColourNote(header_col, "", "--- Potion & Item Usage ---")
+    HelpLine("ptw use <cat>", "Use highest level item in category (quaff/zap/etc).")
+    HelpLine("ptw use <cat> [b|s]", "Use best (b) or smallest (s) level item.")
+    HelpLine("ptw use <cat> [b|s] <tar>", "Use item on a specific target (for Wands/Scrolls).")
+    ColourNote("orange", "", "                        Note: Wands and Staffs are automatically worn before use.")
+	ColourNote("gray", "", "                         Examples: 'ptw use heal', 'ptw use mana s', 'ptw use attack spider'")
     Note("")
     ColourNote(header_col, "", "--- Inventory Sync and Restock ---")
     HelpLine("ptw sync add <id>", "Set the bag ID to scan for your items.")
