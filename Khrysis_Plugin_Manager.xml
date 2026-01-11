@@ -11,7 +11,7 @@
    save_state="y"
    date_written="2025-02-01 16:11:39"
    requires="5.07"
-   version="1.4"
+   version="1.41"
 >
 
 <description trim="y">
@@ -112,7 +112,7 @@ local pluginList = {
         name = "Potion_tracker",
         id   = "9c1c367c95e1d469f201ed44",
         file = "Potion_tracker.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Potion_tracker.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Potion%20Tracker/Potion_tracker.xml"
     },
     {
         name = "Practice_all_or_list",
