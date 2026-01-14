@@ -15,14 +15,23 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.5"
+   version="1.51"
    >
 <description trim="y">
 <![CDATA[
-This plugin allows you to add and remove attack and AoE spells using the 'aam add' and 'aam rem' aliases.
-These go on a list that it will keep updated as you aquire the spells on it or as you get higher level ones on the list.
-This keeps your atk and aoe variables automatically updated based on what you want.
-You can also list the current attack and AoE spells with 'aam list patk', 'aam list aoe', or 'aam list all'.
+============================================================================
+                     ATK AOE MANAGER CHANGE LOG
+============================================================================
+v1.510
+- New [AAM STATUS]: Refined UI showing active spells and database counts.
+- New [AAM LIST]: Redesigned grid-view for easier reading of spell lists.
+- Added Skill Support: Separate category for non-spell combat skills.
+- Added Short Syntax: Map long skill names to short commands via 'setskill'.
+- Auto-Upgrade Logic: Automatically detects Expert/95% mastery to update 
+  active attack variables.
+
+* Type 'aam help' for full command documentation.
+============================================================================
 ]]>
 </description>
 
@@ -854,7 +863,7 @@ function OnPluginSaveState ()
 end
 
 function OnPluginInstall ()
-  ColourNote("blue", "yellow", "Plugin Installed! Type aam help - to show help")
+  ColourNote("blue", "yellow", "[AAM] Installed! Type 'aam help' for commands or 'aam status' to see active spells.")
   assert(loadstring(GetVariable("Patk") or ""))()
   assert(loadstring(GetVariable("Aoe") or ""))()
   assert(loadstring(GetVariable("Skills") or ""))()
@@ -867,7 +876,7 @@ end
 require("async")
 json = require("json")
 
- plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Atk_Aoe_Manager.xml"
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Atk%20Aoe%20Manager/Atk_Aoe_Manager.xml"
  SetVariable("DownloadURL", plugin_url)
  plugin_protocol = "HTTPS"
  plugin_prefix = "[Atk_Aoe_Manager]"
