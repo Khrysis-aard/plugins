@@ -19,7 +19,7 @@
 ============================================================================
                      KHRYSIS PLUGIN MANAGER (KPM)
 ============================================================================
-v1.41
+v1.42
 - Centralized Update Hub for all Khrysis-aard plugins.
 - Dashboard Support: Clickable Install/Update/Remove links.
 - Self-Update Logic: Use 'kpm update' to keep the manager current.
@@ -147,7 +147,7 @@ local pluginList = {
 local managerPlugin = {
     name = "Khrysis_Plugin_Manager",
     id = world.GetPluginID(),
-    url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Khrysis_Plugin_Manager.xml"
+    url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/KPM/Khrysis_Plugin_Manager.xml"
 }
 
 -- Async wrapper
