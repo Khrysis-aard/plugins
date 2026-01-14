@@ -11,15 +11,25 @@
    save_state="y"
    date_written="2025-02-01 16:11:39"
    requires="5.07"
-   version="1.41"
+   version="1.42"
 >
 
 <description trim="y">
 <![CDATA[
-kpm help   : shows this help
-kpm check  : quick checks for updates on plugins prints links for updates
-kpm list   : shows dashboard of plugin status with clickable Install/Remove/Update links
-kpm update : checks for and updates this plugin
+============================================================================
+                     KHRYSIS PLUGIN MANAGER (KPM)
+============================================================================
+v1.42
+- Centralized Update Hub for all Khrysis-aard plugins.
+- Dashboard Support: Clickable Install/Update/Remove links.
+- Self-Update Logic: Use 'kpm update' to keep the manager current.
+
+COMMANDS:
+* kpm list   : Open the main dashboard to see status of all plugins.
+* kpm help   : Show this command summary.
+* kpm check  : Quick text-based check for available updates.
+* kpm update : Manually check for and install Plugin Manager updates.
+============================================================================
 ]]>
 </description>
 </plugin>
@@ -94,7 +104,7 @@ local pluginList = {
         name = "Atk_Aoe_Manager",
         id   = "689c1286fe55ac130d90458c",
         file = "Atk_Aoe_Manager.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Atk_Aoe_Manager.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Atk%20Aoe%20Manager/Atk_Aoe_Manager.xml"
     },
     {
         name = "CycleCastSpells",
@@ -137,7 +147,7 @@ local pluginList = {
 local managerPlugin = {
     name = "Khrysis_Plugin_Manager",
     id = world.GetPluginID(),
-    url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Khrysis_Plugin_Manager.xml"
+    url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/KPM/Khrysis_Plugin_Manager.xml"
 }
 
 -- Async wrapper
@@ -578,6 +588,20 @@ end
 
 function OnHelp ()
     world.Note(world.GetPluginInfo(world.GetPluginID(), 3))
+end
+
+function OnPluginInstall()
+  -- Print the basic install message
+  ColourNote("blue", "yellow", "[KPM] Khrysis Plugin Manager Installed/Reloaded!")
+  
+  -- Display the "What's New" or Command List from the description tag
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
+  
+  -- Extra tip for the dashboard
+  ColourNote("silver", "", "Tip: Use '", "lime", "", "kpm list", "silver", "", "' to manage your installed plugins.")
+  Note("")
 end
 
 ]]>
