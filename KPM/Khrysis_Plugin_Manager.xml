@@ -1,0 +1,610 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+<muclient>
+
+<plugin
+   name="Khrysis_Plugin_Manager"
+   author="Khrysis"
+   id="ab7715209db191c8e89e2e9d"
+   language="Lua"
+   purpose="Check for or install new updates"
+   save_state="y"
+   date_written="2025-02-01 16:11:39"
+   requires="5.07"
+   version="1.42"
+>
+
+<description trim="y">
+<![CDATA[
+============================================================================
+                     KHRYSIS PLUGIN MANAGER (KPM)
+============================================================================
+v1.41
+- Centralized Update Hub for all Khrysis-aard plugins.
+- Dashboard Support: Clickable Install/Update/Remove links.
+- Self-Update Logic: Use 'kpm update' to keep the manager current.
+
+COMMANDS:
+* kpm list   : Open the main dashboard to see status of all plugins.
+* kpm help   : Show this command summary.
+* kpm check  : Quick text-based check for available updates.
+* kpm update : Manually check for and install Plugin Manager updates.
+============================================================================
+]]>
+</description>
+</plugin>
+
+<!-- ==================== ALIASES ==================== -->
+
+<aliases>
+
+  <alias
+    match="^kpm help$"
+    enabled="y"
+    regexp="y"
+    script="OnHelp"
+  />
+
+  <alias
+    match="^kpm check$"
+    enabled="y"
+    regexp="y"
+    script="check_for_updates_async"
+  />
+
+  <alias
+    match="^kpm install (.+)$"
+    enabled="y"
+    regexp="y"
+    script="install_plugin"
+  />
+
+  <alias
+    match="^kpm list$"
+    enabled="y"
+    regexp="y"
+    script="show_dashboard_async"
+  />
+  
+  <alias
+  match="^kpm remove (.+)$"
+  enabled="y"
+  regexp="y"
+  script="remove_plugin"
+  />
+
+  <alias
+  match="^kpm update$"
+  enabled="y"
+  regexp="y"
+  script="update_manager_async"
+  />
+
+  </aliases>
+
+<!-- ==================== SCRIPT ==================== -->
+
+<script>
+<![CDATA[
+require("wait")
+require("async")
+json = require("json")
+
+--------------------------------------------------
+-- CONFIG
+--------------------------------------------------
+
+local plugin_protocol = "HTTPS"
+local plugin_prefix   = "[Plugin Manager]"
+
+-- IMPORTANT:
+-- plugin.id MUST match the installed plugin's <plugin id="...">
+local pluginList = {
+    {
+        name = "Atk_Aoe_Manager",
+        id   = "689c1286fe55ac130d90458c",
+        file = "Atk_Aoe_Manager.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Atk%20Aoe%20Manager/Atk_Aoe_Manager.xml"
+    },
+    {
+        name = "CycleCastSpells",
+        id   = "74b124cb16d29c3f9a369ae4",
+        file = "CycleCastSpells.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/CycleCastSpells.xml"
+    },
+    {
+        name = "FT2_portal",
+        id   = "6b615834a1711f681d285f20",
+        file = "FT2_portal.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/FT2_portal.xml"
+    },
+    {
+        name = "Potion_tracker",
+        id   = "9c1c367c95e1d469f201ed44",
+        file = "Potion_tracker.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Potion%20Tracker/Potion_tracker.xml"
+    },
+    {
+        name = "Practice_all_or_list",
+        id   = "9fc0df56fe13899c9339e53f",
+        file = "Practice_all_or_list.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Practice_all_or_list.xml"
+    },
+	{
+        name = "wid",
+        id   = "16537fffd375971a606cc8c0",
+        file = "wid.xml",
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/wid.xml"
+    },
+}
+
+--------------------------------------------------
+-- PLUGIN MANAGER SELF-UPDATE
+-- Command: kpm update
+--------------------------------------------------
+
+-- Manager plugin metadata
+local managerPlugin = {
+    name = "Khrysis_Plugin_Manager",
+    id = world.GetPluginID(),
+    url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Khrysis_Plugin_Manager.xml"
+}
+
+-- Async wrapper
+function update_manager_async()
+    wait.make(update_manager)
+end
+
+-- Update logic
+function update_manager()
+    ColourNote("cyan", "", plugin_prefix .. " Checking for Plugin Manager updates...")
+
+    local t = async.request(managerPlugin.url, plugin_protocol)
+    if not t then
+        ColourNote("red", "", plugin_prefix .. " Failed to create update request.")
+        return
+    end
+
+    local timeout, totTime = 10, 0
+    while t:alive() and totTime < timeout do
+        wait.time(0.1)
+        totTime = totTime + 0.1
+    end
+
+    local _, data, status = t:join()
+    if status ~= 200 or not data then
+        ColourNote("red", "", plugin_prefix .. " Failed to download Plugin Manager update.")
+        return
+    end
+
+    -- Versions
+    local remoteVerStr = string.match(data, '%s%s+version="([0-9%.]+)"')
+    local remoteVer    = tonumber(remoteVerStr) or 0
+    local currentVer   = GetPluginInfo(managerPlugin.id, 19) or 0
+
+    if remoteVer <= currentVer then
+        ColourNote(
+            "green",
+            "",
+            plugin_prefix .. " Plugin Manager is up to date (v" ..
+            string.format("%.3f", currentVer) .. ")"
+        )
+        return
+    end
+
+    ColourNote(
+        "yellow",
+        "",
+        plugin_prefix .. " Updating Plugin Manager to v" .. remoteVerStr .. "..."
+    )
+
+    -- Determine current plugin file path
+    local pluginPath = GetPluginInfo(managerPlugin.id, 6)
+    if not pluginPath then
+        ColourNote("red", "", plugin_prefix .. " Cannot determine plugin file path.")
+        return
+    end
+
+    -- Write updated file
+    local file = io.open(pluginPath, "wb")
+    if not file then
+        ColourNote("red", "", plugin_prefix .. " Failed to write plugin file.")
+        return
+    end
+
+    file:write(data)
+    file:close()
+
+    ColourNote("green", "", plugin_prefix .. " Plugin Manager updated. Reloading...")
+
+    -- Reload self safely
+    Execute("\\\\\\DoAfterSpecial(0.2, \"ReloadPlugin('" .. managerPlugin.id .. "')\", sendto.script)")
+
+    -- Run dashboard after short delay
+    Execute("\\\\\\DoAfterSpecial(0.5, \"Execute('kpm list')\", sendto.script)")
+
+end
+
+--------------------------------------------------
+-- UPDATE CHECK
+--------------------------------------------------
+
+function check_for_updates_async()
+    wait.make(check_for_updates)
+end
+
+function check_for_updates()
+    ColourNote("white", "", plugin_prefix .. " Checking for updates for all plugins...")
+
+    for _, plugin in ipairs(pluginList) do
+        check_plugin_update(plugin)
+    end
+end
+
+function check_plugin_update(plugin)
+    ColourNote("white", "", plugin_prefix .. " Checking update for " .. plugin.name .. "...")
+
+    local urlThread = async.request(plugin.url, plugin_protocol)
+    if not urlThread then
+        ColourNote("red", "", plugin_prefix .. " Failed to create request.")
+        return
+    end
+
+    local timeout, totTime = 10, 0
+    while urlThread:alive() and totTime < timeout do
+        wait.time(0.1)
+        totTime = totTime + 0.1
+    end
+
+    local _, pluginData, status = urlThread:join()
+    if status ~= 200 or not pluginData then
+        ColourNote("red", "", plugin_prefix .. " Download failed for " .. plugin.name)
+        return
+    end
+
+    -- Detect install state
+    local currentVersion = GetPluginInfo(plugin.id, 19)
+    if not currentVersion then
+        ColourNote("yellow", "", plugin_prefix .. " " .. plugin.name .. " is not installed.")
+        return
+    end
+
+    local currentVerStr = string.format("%1.3f", currentVersion)
+    local remoteVerStr  = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+    local remoteVersion = tonumber(remoteVerStr) or 0
+
+    if remoteVersion == currentVersion then
+        ColourNote("white", "", plugin_prefix .. " " .. plugin.name .. " is up to date (v" .. currentVerStr .. ")")
+    elseif remoteVersion > currentVersion then
+        ColourNote("yellow", "", plugin_prefix .. " New version (v" .. remoteVerStr .. ") available for " .. plugin.name)
+        print_update_link(plugin.name)
+    else
+        ColourNote("white", "", plugin_prefix .. " You have a newer version (v" .. currentVerStr .. ") of " .. plugin.name)
+    end
+end
+
+--------------------------------------------------
+-- HYPERLINK HELPER
+--------------------------------------------------
+
+local function safe_hyperlink(action, plugin_name)
+    local color = "green"  -- default
+    local label = ""       -- will set based on action
+
+    if action == "remove" then
+        color = "red"
+        label = "Remove"
+    elseif action == "update" then
+        label = "Update"
+    elseif action == "install" then
+        label = "Install"
+    else
+        label = action  -- fallback
+    end
+
+    local link = Hyperlink(
+        "kpm " .. (action == "update" and "install" or action) .. " " .. plugin_name,
+        "[" .. label .. "]",
+        "",
+        color,
+        ""
+    )
+    return link or ""  -- always return a string
+end
+
+--------------------------------------------------
+-- HYPERLINK
+--------------------------------------------------
+
+function print_update_link(plugin_name)
+    Hyperlink(
+        "kpm install " .. plugin_name,
+        plugin_prefix .. " Click here to update " .. plugin_name,
+        "",
+        "green",
+        ""
+    )
+    Note("")
+end
+
+--------------------------------------------------
+-- INSTALL (ALIAS WRAPPER)
+--------------------------------------------------
+
+function install_plugin(name, line, wildcards)
+    local plugin_name = wildcards[1]
+
+    -- Launch the worker in a coroutine safely
+    wait.make(function()
+        if not plugin_name or plugin_name == "" then
+            ColourNote("red", "", plugin_prefix .. " No plugin name provided!")
+            return
+        end
+        install_plugin_worker(plugin_name)
+    end)
+end
+
+--------------------------------------------------
+-- INSTALL WORKER (CAN WAIT)
+--------------------------------------------------
+
+function install_plugin_worker(plugin_name)
+    -- Find plugin in list
+    local plugin
+    for _, p in ipairs(pluginList) do
+        if p.name == plugin_name then
+            plugin = p
+            break
+        end
+    end
+
+    if not plugin then
+        ColourNote("red", "", plugin_prefix .. " Plugin not found: " .. plugin_name)
+        return
+    end
+
+    -- Determine SAFE plugin directory
+    local managerPath = GetPluginInfo(world.GetPluginID(), 6)
+    if not managerPath then
+        ColourNote("red", "", plugin_prefix .. " Cannot determine manager plugin path.")
+        return
+    end
+
+    local pluginDir = managerPath:match("^(.*)[/\\]")
+    if not pluginDir then
+        ColourNote("red", "", plugin_prefix .. " Failed to resolve plugin directory.")
+        return
+    end
+
+    local pluginFileName = plugin.file:match("[^/\\]+$")
+    local pluginFile = pluginDir .. "\\" .. pluginFileName
+
+    --------------------------------------------------
+    -- DOWNLOAD LATEST VERSION
+    --------------------------------------------------
+    ColourNote("white", "", plugin_prefix .. " Downloading latest version of " .. plugin_name .. "...")
+
+    local urlThread = async.request(plugin.url, plugin_protocol)
+    if not urlThread then
+        ColourNote("red", "", plugin_prefix .. " Couldn't create download request.")
+        return
+    end
+
+    local timeout, totTime = 10, 0
+    while urlThread:alive() and totTime < timeout do
+        wait.time(0.1)
+        totTime = totTime + 0.1
+    end
+
+    local _, pluginData, status = urlThread:join()
+    if status ~= 200 or not pluginData then
+        ColourNote("red", "", plugin_prefix .. " Download failed.")
+        return
+    end
+
+    -- Save downloaded file
+    local file = io.open(pluginFile, "wb")
+    if not file then
+        ColourNote("red", "", plugin_prefix .. " Failed to open file for writing: " .. pluginFile)
+        return
+    end
+    file:write(pluginData)
+    file:close()
+
+    ColourNote("white", "", plugin_prefix .. " Installing/Reloading " .. plugin_name .. "...")
+
+    -- If already loaded, reload. Otherwise, load new plugin.
+    if GetPluginInfo(plugin.id, 6) then
+        ReloadPlugin(plugin.id)
+    else
+        LoadPlugin(pluginFile)
+    end
+
+    ColourNote("green", "", plugin_prefix .. " " .. plugin_name .. " updated and loaded.")
+
+    -- Refresh dashboard after a short delay
+    Execute("\\\\\\DoAfterSpecial(0.5, \"Execute('kpm list')\", sendto.script)")
+end
+
+--------------------------------------------------
+-- Function to unload plugin
+--------------------------------------------------
+
+function remove_plugin(name, line, wildcards)
+    local plugin_name = wildcards[1]
+    local plugin = nil
+    for _, p in ipairs(pluginList) do
+        if p.name == plugin_name then
+            plugin = p
+            break
+        end
+    end
+
+    if not plugin then
+        ColourNote("red", "", plugin_prefix .. " Plugin not found: " .. plugin_name)
+        return
+    end
+
+    ColourNote("white", "", plugin_prefix .. " Unloading " .. plugin_name .. "...")
+    UnloadPlugin(plugin.id)
+
+    -- Refresh dashboard after a short delay
+    Execute("\\\\\\DoAfterSpecial(0.5, \"Execute('kpm list')\", sendto.script)")
+end
+
+--------------------------------------------------
+-- RELOAD
+--------------------------------------------------
+
+function reload_plugin(plugin_id)
+    ColourNote("white", "", plugin_prefix .. " Reloading plugin...")
+
+    local scriptPrefix = GetAlphaOption("script_prefix")
+    if scriptPrefix == "" then
+        scriptPrefix = "\\\\\\"
+        SetAlphaOption("script_prefix", scriptPrefix)
+    end
+
+    Execute(scriptPrefix ..
+        "DoAfterSpecial(0.1, \"ReloadPlugin('" .. plugin_id .. "')\", sendto.script)")
+end
+
+--------------------------------------------------
+-- DASHBOARD
+--------------------------------------------------
+
+
+function show_dashboard_async()
+    wait.make(show_dashboard)
+end
+
+function show_dashboard()
+    wait.make(function()
+
+        -- Header
+        ColourNote("cyan", "", plugin_prefix .. " Dashboard")
+        Note("")
+
+        -- Determine max name length
+        local maxNameLen = #"Name"
+        for _, plugin in ipairs(pluginList) do
+            maxNameLen = math.max(maxNameLen, #plugin.name)
+        end
+
+        local installedWidth = 12
+        local remoteWidth    = 12
+        local statusWidth    = 16
+
+        local fmt = string.format(
+            "%%-%ds %%-%ds %%-%ds %%-%ds",
+            maxNameLen, installedWidth, remoteWidth, statusWidth
+        )
+
+        -- Header row
+        ColourNote("lightblue", "", string.format(
+            fmt,
+            "Name",
+            "Installed",
+            "Remote",
+            "Status"
+        ))
+
+        ColourNote("grey", "", string.rep(
+            "-",
+            maxNameLen + installedWidth + remoteWidth + statusWidth + 4
+        ))
+
+        -- Rows
+        for _, plugin in ipairs(pluginList) do
+            -- Installed version
+            local installedVer = GetPluginInfo(plugin.id, 19)
+            local installedStr = installedVer and string.format("v%.3f", installedVer) or "-"
+
+            -- Remote version
+            local remoteVerStr = "-"
+            local remoteVer = 0
+            local t = async.request(plugin.url, plugin_protocol)
+            if t then
+                local timeout, totTime = 10, 0
+                while t:alive() and totTime < timeout do
+                    wait.time(0.1)
+                    totTime = totTime + 0.1
+                end
+                local _, data, code = t:join()
+                if code == 200 and data then
+                    remoteVerStr = string.match(data, '%s%s+version="([0-9%.]+)"')
+                    remoteVer = tonumber(remoteVerStr) or 0
+                end
+            end
+
+            -- Status text (NO color here)
+            local loadedPath = GetPluginInfo(plugin.id, 6)
+            local statusText = "- Not Installed"
+
+            if loadedPath then
+                if remoteVer > (installedVer or 0) then
+                    statusText = "! Update"
+                else
+                    statusText = "+ Loaded"
+                end
+            end
+
+            -- Print single aligned row
+            Note(string.format(
+                fmt,
+                plugin.name,
+                installedStr,
+                remoteVerStr,
+                statusText
+            ))
+
+            -- Action links (colored safely)
+            local links = {}
+            if statusText == "! Update" then
+                table.insert(links, safe_hyperlink("update", plugin.name))
+                table.insert(links, safe_hyperlink("remove", plugin.name))
+            elseif statusText == "+ Loaded" then
+                table.insert(links, safe_hyperlink("remove", plugin.name))
+            else
+                table.insert(links, safe_hyperlink("install", plugin.name))
+            end
+
+            if #links > 0 then
+                Note(table.concat(links, " "))
+            end
+        end
+
+        -- Footer
+        ColourNote("grey", "", string.rep(
+            "-",
+            maxNameLen + installedWidth + remoteWidth + statusWidth + 4
+        ))
+    end)
+end
+
+--------------------------------------------------
+-- HELP
+--------------------------------------------------
+
+function OnHelp ()
+    world.Note(world.GetPluginInfo(world.GetPluginID(), 3))
+end
+
+function OnPluginInstall()
+  -- Print the basic install message
+  ColourNote("blue", "yellow", "[KPM] Khrysis Plugin Manager Installed/Reloaded!")
+  
+  -- Display the "What's New" or Command List from the description tag
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
+  
+  -- Extra tip for the dashboard
+  ColourNote("silver", "", "Tip: Use '", "lime", "", "kpm list", "silver", "", "' to manage your installed plugins.")
+  Note("")
+end
+
+]]>
+</script>
+
+</muclient>
