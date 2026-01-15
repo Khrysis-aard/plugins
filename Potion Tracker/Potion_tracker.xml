@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.62"
+   version="1.63"
   >
   
   <description trim="y">
@@ -753,14 +753,17 @@ function PotionUse(category, size, target)
             ColourNote("white", "red", "[PTW ERROR] Item '" .. best.name .. "' is missing an Item Class!")
             ColourNote("yellow", "", "The script doesn't know if this is a Potion, Pill, Wand, etc.")
             
+            -- Determine the best keyword to show (use current buy_kw or a placeholder)
+            local kw_display = (best.buy_kw and best.buy_kw ~= "-") and best.buy_kw or "<buy_keyword>"
+
             if best.room == "-" or best.room == "" then
                 -- This is a non-shop item (added manually)
-                Note("This looks like a non-shop item. Please re-add it with a class:")
-                ColourNote("cyan", "", "  ptw add \"" .. best.name .. "\" <category> <level> <item_class>")
+                Note("This looks like a non-shop item. Please re-add it with a keyword and class:")
+                ColourNote("cyan", "", "  ptw add \"" .. best.name .. "\" " .. kw_display .. " <category> <level> <item_class>")
             else
                 -- This is a shop item
-                Note("Please re-appraise this at its shop:")
-                ColourNote("cyan", "", "  ptw appraise \"" .. best.name .. "\" <category>")
+                Note("Please go to the shop and re-appraise using the item's buy keyword:")
+                ColourNote("cyan", "", "  ptw appraise " .. kw_display .. " <category>")
             end
 
             -- Default fallback so the script doesn't crash
@@ -2195,5 +2198,3 @@ json = require("json")
     ]]>
   </script>
 </muclient>
-
-
