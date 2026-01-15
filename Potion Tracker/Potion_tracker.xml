@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-05-24 13:46:46"
    requires="5.07"
-   version="1.61"
+   version="1.62"
   >
   
   <description trim="y">
@@ -748,13 +748,37 @@ function PotionUse(category, size, target)
         local best = matches[1]
         local keyword = (best.buy_kw and best.buy_kw ~= "" and best.buy_kw ~= "-") and best.buy_kw or best.name
         
-        -- NEW: Determine the correct command for this item class
-        -- We check the table we created earlier. Default to 'quaff' if missing.
-        local action = "quaff"
-        if best.item_class and class_to_cmd[best.item_class] then
-            action = class_to_cmd[best.item_class]
-        elseif best.name:lower():find("scroll") then -- Fallback for un-appraised old items
+        -- SANITY CHECK: Handle items missing classification
+        if not best.item_class or best.item_class == "" then
+            ColourNote("white", "red", "[PTW ERROR] Item '" .. best.name .. "' is missing an Item Class!")
+            ColourNote("yellow", "", "The script doesn't know if this is a Potion, Pill, Wand, etc.")
+            
+            if best.room == "-" or best.room == "" then
+                -- This is a non-shop item (added manually)
+                Note("This looks like a non-shop item. Please re-add it with a class:")
+                ColourNote("cyan", "", "  ptw add \"" .. best.name .. "\" <category> <level> <item_class>")
+            else
+                -- This is a shop item
+                Note("Please re-appraise this at its shop:")
+                ColourNote("cyan", "", "  ptw appraise \"" .. best.name .. "\" <category>")
+            end
+
+            -- Default fallback so the script doesn't crash
+            best.item_class = "Potion" 
+        end
+		
+		-- Determine the correct action based on item_class
+        local action = "quaff" -- Default
+        local item_class = best.item_class or "Potion"
+
+        if item_class == "Scroll" then
             action = "recite"
+        elseif item_class == "Wand" then
+            action = "zap"
+        elseif item_class == "Staff" then
+            action = "brandish"
+        elseif item_class == "Pill" or item_class == "Food" then
+            action = "eat"
         end
 
         -- 4. Execute with Bag Logic
@@ -779,27 +803,23 @@ function PotionUse(category, size, target)
             end
         end
 
-       -- 6. Perform the main action (Aardwolf Held-Item Style)
+       -- 6. Perform the main action (Target-Aware)
         local has_target = (target and target ~= "")
-        local item_class = best.item_class or "Potion"
         local final_cmd = ""
 
         if has_target then
             if item_class == "Wand" then
-                -- Since Section 5 wears it, we just zap the target
                 final_cmd = "zap " .. target
             elseif item_class == "Staff" then
-                -- Staffs affect the whole room, usually just 'brandish'
                 final_cmd = "brandish"
             elseif item_class == "Scroll" then
-                -- Scrolls still need: recite <scroll> <target>
                 final_cmd = "recite " .. keyword .. " " .. target
             else
-                -- Potions, Pills, etc.
+                -- Potions, Pills, and Food ignore target and use their specific action
                 final_cmd = action .. " " .. keyword
             end
         else
-            -- No target provided (Standard use)
+            -- No target: use the determined action (quaff/eat/etc)
             final_cmd = action .. " " .. keyword
         end
 
