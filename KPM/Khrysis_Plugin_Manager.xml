@@ -11,7 +11,7 @@
    save_state="y"
    date_written="2025-02-01 16:11:39"
    requires="5.07"
-   version="1.43"
+   version="1.44"
 >
 
 <description trim="y">
@@ -19,7 +19,7 @@
 ============================================================================
                      KHRYSIS PLUGIN MANAGER (KPM)
 ============================================================================
-v1.42
+v1.44
 - Centralized Update Hub for all Khrysis-aard plugins.
 - Dashboard Support: Clickable Install/Update/Remove links.
 - Self-Update Logic: Use 'kpm update' to keep the manager current.
