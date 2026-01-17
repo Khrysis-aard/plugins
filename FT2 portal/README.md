@@ -23,3 +23,6 @@ A comprehensive helper for the **Fairy Tales II** goal on Aardwolf MUD. This plu
 1.  Download the `FT2_portal.xml` file.
 2.  Place it in your MUSHclient `worlds/plugins` folder.
 3.  In MUSHclient, press **Ctrl + Shift + P** and click **Add** to install.
+
+---
+*Developed by Khrysis for Aardwolf MUD.*
