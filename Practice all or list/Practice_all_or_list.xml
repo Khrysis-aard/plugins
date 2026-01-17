@@ -15,9 +15,28 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.2"
+   version="1.21"
    >
+<description trim="y">
+<![CDATA[
+============================================================================
+                PRACTICE ALL OR LIST CHANGE LOG
+============================================================================
+v1.100
+- Custom & Tier Lists: Maintain separate groups for daily use vs remorting.
+- Auto-Spellup: Scans curative/passive/movement skills for easy practicing.
+- Smart Logic: Displays total practice sessions needed to finish a list.
+- Rebirth Support: Auto-refreshes spellup tables upon remort/reincarnation.
 
+COMMANDS:
+* dprac all      : Practices every available skill to 95%.
+* cprac custom   : Practices matches from your custom list.
+* cprac tier     : Practices matches from your tier list.
+* cprac spellup  : Toggles auto-detection of common buff/heal spells.
+* pal update install : Check GitHub and install the latest version.
+============================================================================
+]]>
+</description>
 </plugin>
 
 <aliases>
@@ -535,7 +554,7 @@ function cprac_custom ()
       count = count + 1
       -- column width of 20 characters
       local padded_name = string.format("%-20s", k:sub(1, 19))
-      ColourTell("yellow", "", "â¢ ", "cyan", "", padded_name)
+      ColourTell("yellow", "", "Ã¢ÂÂ¢ ", "cyan", "", padded_name)
       
       -- Every 4 items, start a new line
       if count % 4 == 0 then
@@ -710,7 +729,7 @@ function spellup_list ()
     count = count + 1
     -- column width of 20 characters
     local padded_name = string.format("%-20s", k:sub(1, 19))
-    ColourTell("yellow", "", "â¢ ", "cyan", "", padded_name)
+    ColourTell("yellow", "", "Ã¢ÂÂ¢ ", "cyan", "", padded_name)
     
     -- Every 4 items, start a new line
     if count % 4 == 0 then
@@ -821,7 +840,13 @@ function OnPluginDisconnect ()
 end -- OnPluginDisconnect
 
 function OnPluginInstall ()
-  ColourNote ("blue","yellow","Practice all or custom list Installed! Type dprac/cprac help for help file")
+   -- Print the basic install message
+  ColourNote("blue", "yellow", "[PAL] Installed/Reloaded! Type cprac help for more info.")
+  
+  -- Display the "What's New" or Command List from the description tag
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
   cskills_found = {}
   tskills_found = {}
   spellup = {}
