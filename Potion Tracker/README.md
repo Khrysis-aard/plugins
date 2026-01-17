@@ -32,4 +32,4 @@ A comprehensive inventory tracking and automation system for Aardwolf MUD. Origi
 - `ptw quiet <on/off>`: Toggle silencing of "You quaff..." messages.
 
 ---
-*Developed for Aardwolf MUD / MUSHclient. Version 1.61*
+*Developed by Khrysis for Aardwolf MUD.*
