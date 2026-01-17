@@ -13,36 +13,26 @@
    save_state="y"
    date_written="2024-12-15 23:12:46"
    requires="5.07"
-   version="1.2"
+   version="1.21"
    >
    <description trim="y">
 <![CDATA[
-CycleCastSpells
-===============================================================================
-This plugin allows you to create "rotation" lists for spells or skills. 
-Each time you call a category, it casts the next spell in that list.
+============================================================================
+                     CYCLE CAST SPELLS CHANGE LOG
+============================================================================
+v1.200
+- Rotation Support: Create multi-spell "cycles" for complex combat.
+- Targeting: Use 'ccx' to fire your next rotation spell on a target.
+- Enhanced UI: 'cc list' now shows full rotation paths with [NEXT] markers.
+- Auto-Saving: All your custom rotations persist between sessions.
 
 COMMANDS:
-  cc add <spell> <group>  - Adds a spell to a specific rotation group.
-  cc rem <spell> <group>  - Removes a spell from a group.
-  cc list                 - Shows all your saved groups and spells.
-  cc <group>              - Casts the next spell in that group's cycle.
-  ccx <group> <mob>       - Casts the next spell in cycle on a specific target.
-  cc clear <group>        - Deletes a specific group.
-  cc clear all            - Deletes everything.
-
-EXAMPLES:
-  1. Multi-spell Fire Rotation:
-     cc add 'fireball' f
-     cc add 'fire blast' f
-     cc add 'incinerate' f
-     (Typing 'cc f' will cycle through all three spells)
-
-  2. Debuffing a Mob:
-     cc add 'blind' debuff
-     cc add 'curse' debuff
-     ccx debuff dragon (Starts the fight by blinding/cursing the dragon)
-===============================================================================
+* cc add <spell> <group> : Add a spell/skill to a rotation group.
+* cc <group>             : Fire the next spell in the cycle.
+* ccx <group> <target>   : Fire the next spell on a specific target.
+* cc list                : Display all rotations and current positions.
+* cc help                : View detailed usage and pro-tips.
+============================================================================
 ]]>
 </description>
 
@@ -368,8 +358,16 @@ function OnPluginSaveState ()
   SetVariable("currentIndexes", "currentIndexes = " .. serialize.save_simple(currentIndexes))
 end
 
-function OnPluginInstall ()
-  ColourNote("blue", "yellow", "Plugin Installed! Type cc help - to show help")
+function OnPluginInstall()
+  -- Print the basic install message
+  ColourNote("blue", "yellow", "[CC] CycleCastSpells Installed/Reloaded!")
+  
+  -- Display the "What's New" or Command List from the description tag
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
+  
+  -- Load Saved Data
   assert(loadstring(GetVariable("spellsTable") or "--"))()
   assert(loadstring(GetVariable("currentIndexes") or "--"))()
 end
@@ -380,7 +378,7 @@ end
 require("async")
 json = require("json")
 
- plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/CycleCastSpells.xml"
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Cycle%20Cast%20Spells/CycleCastSpells.xml"
  SetVariable("DownloadURL", plugin_url)
  plugin_protocol = "HTTPS"
  plugin_prefix = "[CycleCastSpells]"
