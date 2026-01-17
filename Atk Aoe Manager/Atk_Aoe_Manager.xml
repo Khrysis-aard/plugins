@@ -15,14 +15,14 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.51"
+   version="1.52"
    >
 <description trim="y">
 <![CDATA[
 ============================================================================
                      ATK AOE MANAGER CHANGE LOG
 ============================================================================
-v1.510
+v1.520
 - New [AAM STATUS]: Refined UI showing active spells and database counts.
 - New [AAM LIST]: Redesigned grid-view for easier reading of spell lists.
 - Added Skill Support: Separate category for non-spell combat skills.
@@ -863,11 +863,19 @@ function OnPluginSaveState ()
 end
 
 function OnPluginInstall ()
+  -- Print the basic install message
   ColourNote("blue", "yellow", "[AAM] Installed! Type 'aam help' for commands or 'aam status' to see active spells.")
-  assert(loadstring(GetVariable("Patk") or ""))()
-  assert(loadstring(GetVariable("Aoe") or ""))()
-  assert(loadstring(GetVariable("Skills") or ""))()
-  assert(loadstring(GetVariable("SkillShortSyntax") or ""))()
+  
+  -- Display the "What's New" or Command List from the description tag
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
+
+  -- Load Saved Data
+  assert(loadstring(GetVariable("Patk") or "Patk = {}"))()
+  assert(loadstring(GetVariable("Aoe") or "Aoe = {}"))()
+  assert(loadstring(GetVariable("Skills") or "Skills = {}"))()
+  assert(loadstring(GetVariable("SkillShortSyntax") or "SkillShortSyntax = {}"))()
 end
 
  ----------------------- Plugin Update Code -----------------------
