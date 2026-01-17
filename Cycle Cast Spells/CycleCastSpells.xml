@@ -20,7 +20,7 @@
 ============================================================================
                      CYCLE CAST SPELLS CHANGE LOG
 ============================================================================
-v1.200
+v1.210
 - Rotation Support: Create multi-spell "cycles" for complex combat.
 - Targeting: Use 'ccx' to fire your next rotation spell on a target.
 - Enhanced UI: 'cc list' now shows full rotation paths with [NEXT] markers.
@@ -472,3 +472,4 @@ json = require("json")
 </script>
 
 </muclient>
+
