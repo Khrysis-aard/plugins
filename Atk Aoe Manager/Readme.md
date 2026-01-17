@@ -21,7 +21,7 @@ A dynamic spell and skill management system that automatically updates your acti
 | `aam setskill <full> to <short>` | Create a short alias for a long skill name. |
 | `aam status` | View your currently active Atk, AoE, and Skill. |
 | `aam list all` | Show all items currently in your watch lists. |
-| `aam atk [target]` | Casts your currently active Primary Attack. |
+| `aam atk [target]` | Casts your currently active Primary Attack. The [target] is optional.|
 | `aam skill [target]` | Uses your currently active Skill. |
 | `aam aoe` | Casts your currently active AoE. |
 
