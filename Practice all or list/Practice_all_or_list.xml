@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.1"
+   version="1.2"
    >
 
 </plugin>
@@ -535,7 +535,7 @@ function cprac_custom ()
       count = count + 1
       -- column width of 20 characters
       local padded_name = string.format("%-20s", k:sub(1, 19))
-      ColourTell("yellow", "", "• ", "cyan", "", padded_name)
+      ColourTell("yellow", "", "â¢ ", "cyan", "", padded_name)
       
       -- Every 4 items, start a new line
       if count % 4 == 0 then
@@ -710,7 +710,7 @@ function spellup_list ()
     count = count + 1
     -- column width of 20 characters
     local padded_name = string.format("%-20s", k:sub(1, 19))
-    ColourTell("yellow", "", "• ", "cyan", "", padded_name)
+    ColourTell("yellow", "", "â¢ ", "cyan", "", padded_name)
     
     -- Every 4 items, start a new line
     if count % 4 == 0 then
@@ -850,7 +850,7 @@ end -- function OnPluginSaveState
 require("async")
 json = require("json")
 
- plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Practice_all_or_list.xml"
+ plugin_url = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Practice%20all%20or%20list/Practice_all_or_list.xml"
  SetVariable("DownloadURL", plugin_url)
  plugin_protocol = "HTTPS"
  plugin_prefix = "[Practice_all_or_list]"
