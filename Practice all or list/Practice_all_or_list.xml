@@ -15,14 +15,14 @@
    save_state="y"
    date_written="2022-02-26 01:42:38"
    requires="5.07"
-   version="1.21"
+   version="1.22"
    >
 <description trim="y">
 <![CDATA[
 ============================================================================
                 PRACTICE ALL OR LIST CHANGE LOG
 ============================================================================
-v1.100
+v1.220
 - Custom & Tier Lists: Maintain separate groups for daily use vs remorting.
 - Auto-Spellup: Scans curative/passive/movement skills for easy practicing.
 - Smart Logic: Displays total practice sessions needed to finish a list.
@@ -970,3 +970,4 @@ json = require("json")
 </script> 
 
 </muclient>
+
