@@ -11,7 +11,7 @@
    save_state="y"
    date_written="2025-02-01 16:11:39"
    requires="5.07"
-   version="1.42"
+   version="1.43"
 >
 
 <description trim="y">
@@ -110,13 +110,13 @@ local pluginList = {
         name = "CycleCastSpells",
         id   = "74b124cb16d29c3f9a369ae4",
         file = "CycleCastSpells.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/CycleCastSpells.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Cycle%20Cast%20Spells/CycleCastSpells.xml"
     },
     {
         name = "FT2_portal",
         id   = "6b615834a1711f681d285f20",
         file = "FT2_portal.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/FT2_portal.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/FT2%20portal/FT2_portal.xml"
     },
     {
         name = "Potion_tracker",
@@ -128,7 +128,7 @@ local pluginList = {
         name = "Practice_all_or_list",
         id   = "9fc0df56fe13899c9339e53f",
         file = "Practice_all_or_list.xml",
-        url  = "https://raw.githubusercontent.com/Khrysis-aard/plugins/refs/heads/main/Practice_all_or_list.xml"
+        url  = "https://raw.githubusercontent.com/Khrysis-aard/aardwolf-mushclient-plugins/refs/heads/main/Practice%20all%20or%20list/Practice_all_or_list.xml"
     },
 	{
         name = "wid",
