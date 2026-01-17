@@ -27,3 +27,6 @@ A flexible training assistant for Aardwolf MUD that allows players to practice a
 1.  Download the `Practice_all_or_list.xml` file.
 2.  Place it in your MUSHclient `worlds/plugins` folder.
 3.  In MUSHclient, press **Ctrl + Shift + P** and click **Add** to install.
+
+---
+*Developed by Khrysis for Aardwolf MUD.*
