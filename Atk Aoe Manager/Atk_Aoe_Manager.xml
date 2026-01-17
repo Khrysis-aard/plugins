@@ -15,22 +15,31 @@
    save_state="y"
    date_written="2024-12-21 00:10:03"
    requires="5.07"
-   version="1.52"
+   version="1.53"
    >
 <description trim="y">
 <![CDATA[
 ============================================================================
                      ATK AOE MANAGER CHANGE LOG
 ============================================================================
-v1.520
-- New [AAM STATUS]: Refined UI showing active spells and database counts.
-- New [AAM LIST]: Redesigned grid-view for easier reading of spell lists.
-- Added Skill Support: Separate category for non-spell combat skills.
-- Added Short Syntax: Map long skill names to short commands via 'setskill'.
-- Auto-Upgrade Logic: Automatically detects Expert/95% mastery to update 
-  active attack variables.
+v1.530
+- Documentation Fix: Restored missing management and update commands to 
+  the 'aam help' file.
+- UI Refinement: Reorganized help categories for better command clarity.
 
-* Type 'aam help' for full command documentation.
+v1.520 (Major Update)
+- New [AAM STATUS]: Refined UI showing active spells and database counts.
+- New [AAM LIST]: Redesigned grid-view for spell list visualization.
+- Added Skill Support: Separate category for non-spell combat skills.
+- Added Short Syntax: Map long skill names to short commands (setskill).
+- Auto-Upgrade Logic: Detects 95% mastery to update active variables.
+
+COMMANDS:
+* aam status     : View active spells and database counts.
+* aam atk [mob]  : Cast attack spell (target optional).
+* aam skill [mob]: Use primary skill (target optional).
+* aam aoe        : Cast active AoE spell.
+* aam update     : Check GitHub for the latest version.
 ============================================================================
 ]]>
 </description>
@@ -834,21 +843,30 @@ function OnHelp()
 
     Note("")
     HelpLine("aam status", "View active spells and list counts.")
-    HelpLine("aam list <all|patk|aoe|shortsyntax>", "See full contents of your lists.")
+    HelpLine("aam list <all|patk|aoe|skill>", "See full contents of your lists.")
+    HelpLine("aam list shortsyntax", "See all short syntax mappings.")
     Note("")
     ColourNote(header_col, "", "--- Management ---")
     HelpLine("aam add <patk|aoe|skill> <name>", "Add item to watch list.")
     HelpLine("aam rem <patk|aoe|skill> <name>", "Remove item from list.")
-    HelpLine("aam clear <all|patk|aoe|skill>", "Wipe a list clean.")
+    HelpLine("aam setskill <name> to <short>", "Map long name to short command.")
+    HelpLine("aam showskill <name>", "Show the short syntax for a skill.")
+    HelpLine("aam clear <all|patk|aoe|skill>", "Wipe a specific list clean.")
+    HelpLine("aam clear shortsyntax", "Wipe all short syntax mappings.")
     Note("")
     ColourNote(header_col, "", "--- Manual Control ---")
     HelpLine("aam set <atk|aoe|skill> <name>", "Force a specific spell/skill.")
-    HelpLine("aam setskill <name> to <shortsyntax>", "Map long name to short command.")
     Note("")
     ColourNote(header_col, "", "--- Combat ---")
-    HelpLine("aam atk [target]", "Cast attack spell.")
-    HelpLine("aam skill [target]", "Use current skill.")
+    HelpLine("aam atk", "Cast attack spell.")
+    HelpLine("aam atk <target>", "Cast attack spell on target.")
+    HelpLine("aam skill", "Use current skill.")
+    HelpLine("aam skill <target>", "Use current skill on target.")
     HelpLine("aam aoe", "Cast AoE spell.")
+    Note("")
+    ColourNote(header_col, "", "--- Maintenance ---")
+    HelpLine("aam update check", "Check for update.")
+    HelpLine("aam update install", "Install new update.")
     Note("")
     ColourNote(border_col, "", "+-----------------------------------------------------------------+")
 end
