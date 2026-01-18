@@ -8,7 +8,7 @@ A comprehensive helper for the **Fairy Tales II** goal on Aardwolf MUD. This plu
 | :--- | :--- |
 | **ft2 guide on** | Displays the FT2 Guide miniwindow |
 | **ft2 guide off** | Hides the FT2 Guide miniwindow |
-| **ft2 update** | Checks GitHub and installs the latest version |
+| **ft2 update check/install** | Checks GitHub and installs the latest version |
 | **ft2 help** | Shows the in-game help file |
 
 ## Features
