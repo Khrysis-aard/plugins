@@ -419,7 +419,7 @@ function OnHelp ()
   ColourNote("cyan", "", "  wid      ", "silver", "", " - Status: View tracked IDs and current equip state.")
   ColourNote("cyan", "", "  wid help ", "silver", "", " - Show this help information.")
   Note("")
-  ColourNote("orange", "", "  wid off  ", "silver", "", " - Emergency: Use if game output stays hidden/stuck.")
+  ColourNote("orange", "", "  wid off  ", "silver", "", "- Manual Sync: Force a re-scan of equipment IDs.")
   ColourNote("silver", "", "============================================================")
   Note("") 
 end
