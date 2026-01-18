@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE muclient>
+<muclient>
+<plugin
+   name="wid"
+   author="Khrysis"
+   id="16537fffd375971a606cc8c0"
+   language="Lua"
+   purpose="gets id number of primary and second weapon then saves to variables primaryweapon and secondweapon"
+   save_state="y"
+   date_written="2022-01-09 09:40:16"
+   requires="5.07"
+   version="1.2"
+   >
+<description trim="y">
+<![CDATA[
+============================================================================
+                        WID TRACKER CHANGE LOG
+============================================================================
+v1.200
+- Smart Re-equipping: Improved logic for Dual-Wield and Held modes.
+- Keep-Flag Awareness: Now handles temporary staves/items correctly.
+- Enhanced UI: Improved status alignment and visual layout.
+- Initial Sync: Automatically performs an ID sync on first tick.
+
+COMMANDS:
+* won            : Smart-equip missing tracked weapons.
+* woff           : Smart-remove currently tracked weapons.
+* wid            : View current IDs, names, and preferred mode.
+* wid off        : Manual Sync - Force a re-scan of equipment IDs.
+* wid help       : View detailed help information.
+============================================================================
+]]>
+</description>
+</plugin>
+<triggers>
+<trigger
+  enabled="y"
+  match="^You hold (.*?)\.$"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  has_held = true
+  SetVariable("has_held", "1")
+  SyncEquipment()
+</send>
+</trigger>
+
+<trigger
+  enabled="y"
+  match="^You stop holding (.*?)\.$"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  has_held = false
+  has_held_keep = false
+  SetVariable("has_held", "0")
+  SaveState()
+</send>
+</trigger>
+<trigger
+  enabled="y"
+  match="^You wield (.*) in your off\-hand\.$"
+  regexp="y"
+  send_to="12"
+  sequence="90"
+>
+<send>
+  has_secondary = true
+  SetVariable("has_secondary", "1")
+  SyncEquipment()
+</send>
+</trigger>
+
+<trigger
+  enabled="y"
+  match="^You wield (.*?)\.$"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  has_primary = true
+  SetVariable("has_primary", "1")
+  SyncEquipment()
+</send>
+</trigger>
+
+<trigger
+  enabled="y"
+  match="^You stop wielding (.*) in your off\-hand\.$"
+  regexp="y"
+  send_to="12"
+  sequence="90"
+>
+<send>
+  has_secondary = false
+  SetVariable("has_secondary", "0")
+  SaveState()
+</send>
+</trigger>
+
+<trigger
+  enabled="y"
+  match="^You stop wielding (.*?)\.$"
+  regexp="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  has_primary = false
+  SetVariable("has_primary", "0")
+  SaveState()
+</send>
+</trigger>
+
+  <trigger
+   enabled="n"
+   match="^(\d+)\,(.*)\,(.+)\,(\d+)\,(\d+)\,(\d+),(-?\d+),(-?\d+)$"
+   omit_from_output="y"
+   regexp="y"
+   send_to="12"
+   sequence="100"
+   group="eqdata"
+  >
+  <send>
+  -- DEBUG LINE: This shows us exactly what the trigger captured
+  -- Note("WID DEBUG: ID=%1, Flags=%2, Name=%3, Slot=%7")
+  
+  local captured_string = "%2"
+  -- Slot 24 (Primary)
+    if %7 == 24 and string.find(captured_string,"K") then
+      SetVariable("primary","%3")
+      SetVariable("primaryweapon","%1")
+      has_primary = true
+      SetVariable("has_primary", "1")
+    end
+
+    -- Slot 25 (Secondary)
+    if %7 == 25 and string.find(captured_string, "K") then 
+      SetVariable("secondweapon", "%1")
+      SetVariable("secondary", "%3")
+      has_secondary = true
+      SetVariable("has_secondary", "1")
+      SetVariable("pref_mode", "dual") -- If Keep-flagged, this is our mode
+    end
+
+    -- Slot 26 (Held)
+    if %7 == 26 then
+      if string.find(captured_string, "K") then
+        SetVariable("held", "%3")
+        SetVariable("heldid", "%1")
+        has_held = true
+        has_held_keep = true
+        SetVariable("has_held", "1")
+        SetVariable("pref_mode", "held")
+        -- Clear secondary when we are strictly in Held Mode
+        has_secondary = false
+        SetVariable("has_secondary", "0")
+      else
+        has_held = true
+        has_held_keep = false 
+      end
+    end</send>
+  </trigger>
+
+  <trigger
+  enabled="n"
+  match="^(\{eqdata\}|\{eqdata \d+\}|\{\/eqdata\})$"
+  omit_from_output="y"
+  regexp="y"
+  sequence="100"
+  send_to="12"
+  group="eqdata"
+>
+<send>
+  local line = "%0" -- %0 is the entire matched line
+  
+  if string.find(line, "{eqdata") then
+      -- Start of data
+      has_primary = false
+      has_secondary = false
+	  has_held = false
+	  has_held_keep = false
+      
+      -- SAFETY TIMEOUT: If /eqdata isn't seen in 3 seconds, force unlock
+      DoAfterSpecial(3, 'is_updating = false EnableTriggerGroup("eqdata", false)', 12)
+      
+  elseif string.find(line, "{/eqdata}") then
+      -- End of data
+      EnableTriggerGroup("eqdata", false)
+      is_updating = false
+      
+      -- Save the results found during this scan
+      SetVariable("has_primary", has_primary and "1" or "0")
+      SetVariable("has_secondary", has_secondary and "1" or "0")
+	  SetVariable("has_held", has_held and "1" or "0")
+      SaveState()
+	  
+	  -- Show completion message ONLY on the broadcast sync
+      if show_sync_message then
+          ColourNote("darkorange", "", "WID: Initial ID sync complete!")
+          show_sync_message = false
+      end
+  end
+</send>
+</trigger>
+</triggers>
+
+<aliases>
+  <alias
+   script="OnHelp"
+   match="wid help"
+   enabled="y"
+  >
+  </alias>
+  <alias
+   match="woff"
+   enabled="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>
+    -- Reset stuck states if any
+    is_updating = false
+    EnableTriggerGroup("eqdata", false)
+	
+	local mode = GetVariable("pref_mode") or "dual"
+
+    -- If we are in Dual Mode, remove the second weapon
+    if mode == "dual" and has_secondary then 
+      Send("remove second") 
+    end
+
+    -- Always remove the primary weapon
+    if has_primary then 
+      Send("remove wielded") 
+    end
+
+    if not has_primary and not has_secondary then
+      Note("WID: Weapons removed.")
+    end
+  </send>
+  </alias>
+  <alias
+  match="won"
+  enabled="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  is_updating = false
+  EnableTriggerGroup("eqdata", false)
+
+  local p_id = GetVariable("primaryweapon") or ""
+  local s_id = GetVariable("secondweapon") or ""
+  local h_id = GetVariable("heldid") or ""
+  local mode = GetVariable("pref_mode") or "dual"
+  local action_taken = false
+
+  -- 1. Always Primary
+  if not has_primary and p_id ~= "" then 
+    Send("wear " .. p_id) 
+    action_taken = true
+  end
+
+  -- 2. Mode Specific Logic
+  if mode == "dual" then
+    if not has_secondary and s_id ~= "" and s_id ~= p_id then
+      Send("dual " .. s_id)
+      action_taken = true
+    end
+    
+    -- Feedback for Dual Mode
+    if not action_taken then
+       if has_primary and has_secondary then
+          ColourNote("darkorange", "", "WID: Already fully dual-wielding.")
+       else
+          Note("WID: No IDs saved to re-equip.")
+       end
+    end
+
+  elseif mode == "held" then
+    if h_id ~= "" and not has_held_keep then
+      Send("hold " .. h_id)
+      action_taken = true
+    end
+
+    -- Feedback for Held Mode
+    if not action_taken then
+       if has_primary and has_held_keep then
+          ColourNote("darkorange", "", "WID: Already equipped.")
+       else
+          Note("WID: No IDs saved to re-equip.")
+       end
+    end
+  end
+</send>
+</alias>
+  <alias
+  match="wid"
+  enabled="y"
+  send_to="12"
+  sequence="100"
+>
+<send>
+  -- Pull current values safely
+  local p_name = GetVariable("primary") or "None"
+  local p_id   = GetVariable("primaryweapon") or "N/A"
+  local s_name = GetVariable("secondary") or "None"
+  local s_id   = GetVariable("secondweapon") or "N/A"
+  local h_name = GetVariable("held") or "None"
+  local h_id   = GetVariable("heldid") or "N/A"
+  local mode   = (GetVariable("pref_mode") or "dual"):upper()
+
+  ColourNote("silver", "", "================= ", "cyan", "", "Weapon ID Status", "silver", "", " =================")
+  
+  -- We use string formatting to ensure "ID:" starts after the name area
+  -- The item name is printed first, then we use a tab or spaces for the ID
+  AnsiNote(ColoursToANSI("Primary:   " .. p_name))
+  AnsiNote(ColoursToANSI("           @wID: @y" .. p_id))
+  Note("")
+  
+  AnsiNote(ColoursToANSI("Secondary: " .. s_name))
+  AnsiNote(ColoursToANSI("           @wID: @y" .. s_id))
+  Note("")
+  
+  AnsiNote(ColoursToANSI("Held:      " .. h_name))
+  AnsiNote(ColoursToANSI("           @wID: @y" .. h_id))
+  
+  Note("")
+  ColourNote("cyan", "", "Preferred Mode: ", "white", "", mode)
+  ColourNote("silver", "", "====================================================")
+</send>
+</alias>
+  <alias
+   match="wid off"
+   enabled="y"
+   send_to="12"
+   sequence="100"
+  >
+  <send>
+    EnableTriggerGroup("eqdata", false)
+    is_updating = false
+    Note("WID: Manual Sync Triggered...")
+	SyncEquipment()
+  </send>
+  </alias>
+</aliases>
+
+<script>
+<![CDATA[
+require "aardwolf_colors"
+
+show_sync_message = false
+is_updating = false
+sync_done = false -- This ensures we only auto-sync once per reload/login
+
+has_primary = (GetVariable("has_primary") == "1")
+has_secondary = (GetVariable("has_secondary") == "1")
+has_held = (GetVariable("has_held") == "1")
+
+function OnPluginInstall ()
+  -- Print the basic install message
+  ColourNote("blue", "yellow", "[WID] Weapon ID Tracker Installed/Reloaded!")
+  
+  -- Display the boxed description from the header
+  Note("")
+  ColourNote("cyan", "", GetPluginInfo(GetPluginID(), 3))
+  Note("")
+
+  -- Initialize tracking states
+  show_sync_message = false
+  is_updating = false
+  sync_done = false 
+
+  has_primary = (GetVariable("has_primary") == "1")
+  has_secondary = (GetVariable("has_secondary") == "1")
+  has_held = (GetVariable("has_held") == "1")
+end
+
+function OnPluginBroadcast (msg, id, name, text)
+  -- '3e7dedbe37e44942dd46d264' is the Aardwolf Comm Plugin
+  if (id == '3e7dedbe37e44942dd46d264') then
+    if (text == 'comm.tick') then
+      -- Only run the auto-sync if we haven't done it yet
+      if not sync_done then
+         sync_done = true -- Lock it so it only happens once
+		 show_sync_message = true -- Trigger the message in the tag trigger
+		 ColourNote("darkorange", "", "WID: Performing initial equipment ID sync...")
+         SyncEquipment()
+      end
+    end
+  end
+end
+
+function SyncEquipment()
+  if not is_updating then
+    is_updating = true
+    EnableTriggerGroup("eqdata", true)
+    SendNoEcho("eqdata")
+    -- Safety: If eqdata fails to respond, reset in 3 seconds
+    DoAfterSpecial(3, 'is_updating = false EnableTriggerGroup("eqdata", false)', 12)
+  end
+end
+
+function OnHelp ()
+  local name = GetPluginInfo(GetPluginID(), 1)
+  local ver  = GetPluginInfo(GetPluginID(), 19)
+
+  Note("") 
+  ColourNote("silver", "", "================== ", "cyan", "", name .. " v" .. ver, "silver", "", " ==================")
+  ColourNote("cyan", "", "  won      ", "silver", "", " - Smart-equip: Wears only what is currently missing.")
+  ColourNote("cyan", "", "  woff     ", "silver", "", " - Smart-remove: Removes only the tracked weapons.")
+  ColourNote("cyan", "", "  wid      ", "silver", "", " - Status: View tracked IDs and current equip state.")
+  ColourNote("cyan", "", "  wid help ", "silver", "", " - Show this help information.")
+  Note("")
+  ColourNote("orange", "", "  wid off  ", "silver", "", " - Emergency: Use if game output stays hidden/stuck.")
+  ColourNote("silver", "", "============================================================")
+  Note("") 
+end
+]]>
+</script>
+</muclient>
