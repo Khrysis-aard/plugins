@@ -101,7 +101,7 @@
 
 </details>
 
-wid - Manages weapon IDs with Keep-flag awareness, supporting both Dual-Wield and Held modes with automatic equipment synchronization.
+wid - Automatically stores weapon IDs and provides smart-equip (won) and smart-remove (woff) commands based on your (K) flagged gear.
 
 Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, FT2_portal, Potion_tracker
 
