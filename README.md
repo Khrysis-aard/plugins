@@ -101,7 +101,7 @@
 
 </details>
 
-wid plugin - keeps idnumbers for won and woff variables updated as you equip new weapons (only stores keep flagged weapons)
+WID — Automatically captures and stores unique IDs for your Primary, Secondary, and Held gear; includes smart equip/remove logic and mode-aware re-equipping.
 
 Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, FT2_portal, Potion_tracker
 
