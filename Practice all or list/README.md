@@ -12,7 +12,7 @@ A flexible training assistant for Aardwolf MUD that allows players to practice a
 | **cprac tier** | Practices items in your tier list (useful for new tiers/remorts) |
 | **cprac all** | Practices everything in your custom, tier, and spellup lists |
 | **cprac spellup** | Toggles auto-practicing of curative/movement/passive spells |
-| **pal update install** | Checks GitHub and installs the latest version |
+| **pal update check/install** | Checks GitHub and installs the latest version |
 
 ## Features
 
