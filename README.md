@@ -101,7 +101,7 @@
 
 </details>
 
-wid - Automatically captures and stores unique IDs for your Primary, Secondary, and Held gear; includes smart equip/remove logic and mode-aware re-equipping.
+wid - Manages weapon IDs with Keep-flag awareness, supporting both Dual-Wield and Held modes with automatic equipment synchronization.
 
 Plugins with update scripts so far - Aoe_Atk_Manager, CycleCastSpells, Practice_all_or_list, FT2_portal, Potion_tracker
 
